@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   useGame,
   DEFAULT_MODULE_DEFS,
@@ -11,8 +11,9 @@ import {
   DEFAULT_ESCALATED_MODULES,
 } from '../context/GameContext';
 import { getPlayableGrid, getHexesInAoE, hexDistance } from './HexGrid';
-import { EnemyType, ModuleType, PlacedModule, RoguelikeUpgrade } from '../types/game';
+import { EnemyType, ModuleType, PlacedModule, RoguelikeUpgrade, CombatArchetypeId } from '../types/game';
 import { sound } from '../utils/audio';
+import { getCircuitBonusStats, CircuitBonusStats } from './CircuitMatrix';
 import {
   drawDetailedFleetSprite,
   drawDetailedEnemySprite,
@@ -112,6 +113,9 @@ interface PixelProjectile {
   splashRadius: number;
   color: string;
   isHoming?: boolean;
+  pierceRemaining?: number;
+  isCorrosive?: boolean;
+  isEmpSlow?: boolean;
 }
 
 interface PixelDebris {
@@ -169,13 +173,22 @@ function computeTacticalStats(
   allPlaced: Record<string, PlacedModule>,
   rogues: RoguelikeUpgrade[],
   waveElapsedSeconds: number,
-  isOverdrive: boolean
+  isOverdrive: boolean,
+  circuitBonus?: CircuitBonusStats,
+  activeArchetypeId?: CombatArchetypeId
 ) {
-  let damageMult = 1.0;
-  let fireRateMult = isOverdrive ? 2.2 : 1.2;
+  let damageMult = 1.0 + (circuitBonus?.towerDamageMult || 0);
+  let fireRateMult = (isOverdrive ? 2.2 : 1.2) * (1.0 + (circuitBonus?.fireRateMult || 0));
   let rangeMult = 1.0;
   let hpMult = 1.0;
-  let critChance = 0.05;
+  let critChance = 0.05 + (circuitBonus?.critChanceAdd || 0);
+
+  if (activeArchetypeId === 'piercing_kinetic') {
+    damageMult += 0.15;
+  }
+  if (activeArchetypeId === 'shield_drain') {
+    hpMult += 0.20;
+  }
 
   const modMaterials = MODULE_MATERIAL_MAP[mod.type] || ['all'];
   const ringDist = Math.max(Math.abs(mod.q), Math.abs(mod.r), Math.abs(-mod.q - mod.r));
@@ -353,8 +366,12 @@ export const PixelCanvas: React.FC = () => {
     expeditionPhase,
     escalatedModules = DEFAULT_ESCALATED_MODULES,
     defenseModuleDefs = DEFAULT_MODULE_DEFS,
+    circuitNodes = [],
+    activeArchetypeId = 'piercing_kinetic',
   } = useGame();
 
+  const circuitBonus = useMemo(() => getCircuitBonusStats(circuitNodes), [circuitNodes]);
+  const fabContainerRef = useRef<HTMLDivElement>(null);
   const [radialPos, setRadialPos] = useState<{ x: number; y: number } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [hoveredRadialItem, setHoveredRadialItem] = useState<string | null>(null);
@@ -393,6 +410,8 @@ export const PixelCanvas: React.FC = () => {
     combatResources,
     combatCurrencies,
     defenseModuleDefs,
+    circuitBonus,
+    activeArchetypeId,
   });
 
   useEffect(() => {
@@ -412,6 +431,8 @@ export const PixelCanvas: React.FC = () => {
       combatResources,
       combatCurrencies,
       defenseModuleDefs,
+      circuitBonus,
+      activeArchetypeId,
     };
   }, [
     currentWave,
@@ -429,6 +450,8 @@ export const PixelCanvas: React.FC = () => {
     combatResources,
     combatCurrencies,
     defenseModuleDefs,
+    circuitBonus,
+    activeArchetypeId,
   ]);
 
   const callbacksRef = useRef({
@@ -594,7 +617,9 @@ export const PixelCanvas: React.FC = () => {
     let hasSpawnedAny = false;
     let lastWaveId = 0;
     let waveStartTime = 0;
+    let waveElapsed = 0;
     let lastPeriodicPulseIndex = 0;
+    let lastOrbitalStrikeTime = 0;
 
     // Tactical Wave Builder: Alternating difficulty escalation
     // Ondas pares: Aumento massivo de quantidade de inimigos (enxames volumosos)
@@ -858,6 +883,8 @@ export const PixelCanvas: React.FC = () => {
       const rogues = stateRef.current.activeRoguelikeUpgrades || [];
       const isOverdrive = (activeEffects?.overdrive || 0) > Date.now();
       const isEmpActive = (activeEffects?.emp_blast || 0) > Date.now();
+      const isPhaseActive = (activeEffects?.phase_shield || 0) > Date.now();
+      const isOrbitalActive = (activeEffects?.orbital_strike || 0) > Date.now();
 
       // Camera smooth pan & zoom
       camX += (targetCamX - camX) * Math.min(1, 6 * dt);
@@ -869,13 +896,12 @@ export const PixelCanvas: React.FC = () => {
         const hp = hexToPixelWorld(selected.q, selected.r);
         const sx = width / 2 + (hp.x - camX) * camZoom;
         const sy = height / 2 + (hp.y - camY) * camZoom;
-        if (
-          !lastComputedRadialPos ||
-          Math.abs(lastComputedRadialPos.x - sx) > 0.2 ||
-          Math.abs(lastComputedRadialPos.y - sy) > 0.2
-        ) {
+        if (!lastComputedRadialPos) {
           lastComputedRadialPos = { x: sx, y: sy };
           setRadialPos({ x: sx, y: sy });
+        } else if (fabContainerRef.current) {
+          fabContainerRef.current.style.left = `${sx}px`;
+          fabContainerRef.current.style.top = `${sy}px`;
         }
       } else {
         if (lastComputedRadialPos) {
@@ -1024,6 +1050,18 @@ export const PixelCanvas: React.FC = () => {
         coreHpPct
       );
 
+      // Phase Shield Celestial Barrier Ring
+      if (isPhaseActive) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 48 + Math.sin(time * 0.008) * 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // EMP Blast High-Voltage Shockwave Field & Radial Arcs
       if (isEmpActive) {
         ctx.save();
@@ -1070,7 +1108,58 @@ export const PixelCanvas: React.FC = () => {
 
       // 5. DRAW PLACED FLEET MODULES & FIRING ACTION
       const nowSec = time / 1000;
-      const waveElapsed = waveStartTime > 0 ? (time - waveStartTime) / 1000 : 0;
+      waveElapsed += dt;
+
+      // Autonomous Equipment: Orbital Strike Action
+      if (isOrbitalActive && time - lastOrbitalStrikeTime > 1500 && activeEnemies.length > 0) {
+        lastOrbitalStrikeTime = time;
+        const bossTarget = activeEnemies.reduce((prev, curr) => (curr.hp > prev.hp ? curr : prev));
+        bossTarget.hp -= 450;
+        bossTarget.hitFlash = 6;
+        screenShake = Math.min(24, screenShake + 12);
+        sound.playExplosion(0.2);
+        floatingTexts.push({
+          text: 'RAIO ORBITAL! -450',
+          x: bossTarget.x,
+          y: bossTarget.y - 25,
+          color: '#c084fc',
+          life: 0,
+          maxLife: 1.2,
+          scale: 1.5,
+        });
+        for (let d = 0; d < 10; d++) {
+          debrisList.push({
+            x: bossTarget.x + (Math.random() - 0.5) * 15,
+            y: bossTarget.y + (Math.random() - 0.5) * 15,
+            vx: (Math.random() - 0.5) * 140,
+            vy: (Math.random() - 0.5) * 140,
+            size: 3,
+            color: '#a855f7',
+            life: 0,
+            maxLife: 0.4,
+          });
+        }
+      }
+
+      // Orbital Strike visual beam from the heavens
+      if (isOrbitalActive && time - lastOrbitalStrikeTime < 350 && activeEnemies.length > 0) {
+        const targetX = activeEnemies[0]?.x || 0;
+        const targetY = activeEnemies[0]?.y || 0;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(192, 132, 252, 0.7)';
+        ctx.lineWidth = 16;
+        ctx.beginPath();
+        ctx.moveTo(targetX, -height);
+        ctx.lineTo(targetX, targetY);
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(targetX, -height);
+        ctx.lineTo(targetX, targetY);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // Periodic Resonance Pulse Roguelike Upgrade (every 10s)
       const hasPeriodicUpgrade = rogues.some((r) => r.id === 'rogue_time_periodic');
@@ -1110,7 +1199,15 @@ export const PixelCanvas: React.FC = () => {
 
       Object.values(placed).forEach((mod) => {
         const pos = hexToPixelWorld(mod.q, mod.r);
-        const stats = computeTacticalStats(mod, placed, rogues, waveElapsed, isOverdrive);
+        const stats = computeTacticalStats(
+          mod,
+          placed,
+          rogues,
+          waveElapsed,
+          isOverdrive,
+          stateRef.current.circuitBonus,
+          stateRef.current.activeArchetypeId
+        );
 
         let nearestEnemy: PixelEnemy | null = null;
         let nearestDist = Infinity;
@@ -1289,6 +1386,9 @@ export const PixelCanvas: React.FC = () => {
                 splashRadius: pType === 'plasma' ? 48 : pType === 'missile' ? 32 : 0,
                 color: pType === 'plasma' ? '#a855f7' : pType === 'missile' ? '#f97316' : '#38bdf8',
                 isHoming: pType === 'missile',
+                pierceRemaining: stateRef.current.activeArchetypeId === 'piercing_kinetic' ? 2 : 0,
+                isCorrosive: stateRef.current.activeArchetypeId === 'plasma_corrosion',
+                isEmpSlow: stateRef.current.activeArchetypeId === 'emp_concussion',
               });
 
               if (pType === 'pulse') sound.playLaser(440, 0.08);
@@ -1366,6 +1466,7 @@ export const PixelCanvas: React.FC = () => {
         hasSpawnedAny = false;
         lastWaveId = wave;
         waveStartTime = performance.now();
+        waveElapsed = 0;
         lastPeriodicPulseIndex = 0;
       }
 
@@ -1738,6 +1839,21 @@ export const PixelCanvas: React.FC = () => {
 
         // Citadel Core Collision
         if (enemy.currentRadius <= 30) {
+          if (isPhaseActive) {
+            sound.playShieldHit();
+            floatingTexts.push({
+              text: 'FASADO!',
+              x: enemy.x,
+              y: enemy.y - 15,
+              color: '#38bdf8',
+              life: 0,
+              maxLife: 0.8,
+              scale: 1.1,
+            });
+            activeEnemies.splice(e, 1);
+            continue;
+          }
+
           sound.playAlert();
           screenShake = Math.min(22, screenShake + 8);
 
@@ -1875,6 +1991,18 @@ export const PixelCanvas: React.FC = () => {
           hitEnemy.hitFlash = 3;
           sound.playHit();
 
+          if (proj.isCorrosive) {
+            hitEnemy.burnDuration = Math.max(hitEnemy.burnDuration || 0, 3.0);
+          }
+          if (proj.isEmpSlow) {
+            hitEnemy.slowDuration = Math.max(hitEnemy.slowDuration || 0, 2.0);
+            activeEnemies.forEach((other) => {
+              if (other.id !== hitEnemy!.id && Math.hypot(other.x - proj.x, other.y - proj.y) <= 75) {
+                other.slowDuration = Math.max(other.slowDuration || 0, 2.0);
+              }
+            });
+          }
+
           if (proj.splashRadius > 0) {
             screenShake = Math.min(15, screenShake + 3);
             activeEnemies.forEach((other) => {
@@ -1902,8 +2030,13 @@ export const PixelCanvas: React.FC = () => {
             });
           }
 
-          activeProjectiles.splice(p, 1);
-          continue;
+          if (proj.pierceRemaining && proj.pierceRemaining > 0) {
+            proj.pierceRemaining--;
+            proj.damage *= 0.65;
+          } else {
+            activeProjectiles.splice(p, 1);
+            continue;
+          }
         }
 
         // Despawn if max life reached or out of bounds
@@ -2039,6 +2172,12 @@ export const PixelCanvas: React.FC = () => {
         // Collision with Citadel Core
         const coreDist = Math.hypot(eproj.x, eproj.y);
         if (coreDist <= 28) {
+          if (isPhaseActive) {
+            sound.playShieldHit();
+            activeEnemyProjectiles.splice(ep, 1);
+            continue;
+          }
+
           sound.playAlert();
           screenShake = Math.min(18, screenShake + 4);
 
@@ -2290,6 +2429,7 @@ export const PixelCanvas: React.FC = () => {
       {/* 2. EXPANSIVE HEXAGONAL TACTICAL FAB CONTAINER AROUND SELECTED HEX */}
       {selectedHex && radialPos && (
         <div
+          ref={fabContainerRef}
           className="fab-container pointer-events-auto z-40 select-none"
           style={{
             position: 'absolute',
@@ -2609,7 +2749,9 @@ export const PixelCanvas: React.FC = () => {
                   placedModules,
                   activeRoguelikeUpgrades || [],
                   0,
-                  false
+                  false,
+                  circuitBonus,
+                  activeArchetypeId
                 );
 
                 return (

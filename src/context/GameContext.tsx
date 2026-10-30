@@ -726,8 +726,8 @@ export const INITIAL_AUTOMATION_UPGRADES: AutomationUpgrade[] = [
     costMatter: 140,
     costTech: 18,
     costItems: [
-      { itemId: 'comp_pcb_board', quantity: 3 },
-      { itemId: 'cell_plasma_fusion', quantity: 2 },
+      { itemId: 'part.circuit_scrap', quantity: 3 },
+      { itemId: 'mat.dense_plasma', quantity: 2 },
     ],
     installed: false,
     type: 'gas_compressor',
@@ -739,8 +739,8 @@ export const INITIAL_AUTOMATION_UPGRADES: AutomationUpgrade[] = [
     costMatter: 110,
     costTech: 12,
     costItems: [
-      { itemId: 'scrap_hull', quantity: 15 },
-      { itemId: 'comp_electric', quantity: 4 },
+      { itemId: 'scrap.structural', quantity: 15 },
+      { itemId: 'part.connector', quantity: 4 },
     ],
     installed: false,
     type: 'scrap_sorter',
@@ -1413,6 +1413,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (saved) {
         const p = JSON.parse(saved);
         if (p.resources) setResources((prev) => ({ ...prev, ...p.resources }));
+        if (p.baseSectors && typeof p.baseSectors === 'object') {
+          setBaseSectors((prev) => ({ ...prev, ...p.baseSectors }));
+        }
         if (p.inventoryItems && Array.isArray(p.inventoryItems)) {
           // Merge with INITIAL_INVENTORY_ITEMS and remap any legacy IDs (e.g. steel_scrap -> scrap_hull)
           const savedMap = new Map<string, number>();
@@ -1428,6 +1431,45 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               quantity: savedMap.has(item.id) ? (savedMap.get(item.id) as number) : item.quantity,
             }))
           );
+        }
+        if (p.storageCompartments && Array.isArray(p.storageCompartments)) {
+          const builtSet = new Set(p.storageCompartments.filter((c: StorageCompartment) => c.built).map((c: StorageCompartment) => c.id));
+          setStorageCompartments(
+            INITIAL_STORAGE_COMPARTMENTS.map((c) => ({
+              ...c,
+              built: builtSet.has(c.id) || c.id === 'comp_initial',
+            }))
+          );
+        }
+        if (p.defenseModuleDefs && typeof p.defenseModuleDefs === 'object') {
+          setDefenseModuleDefs((prev) => {
+            const next = { ...prev };
+            (Object.keys(DEFAULT_MODULE_DEFS) as ModuleType[]).forEach((key) => {
+              if (p.defenseModuleDefs[key]?.unlocked) {
+                next[key] = { ...next[key], unlocked: true };
+              }
+            });
+            return next;
+          });
+        }
+        if (p.escalatedModules && Array.isArray(p.escalatedModules)) {
+          setEscalatedModules(p.escalatedModules);
+        }
+        if (p.universes && Array.isArray(p.universes)) {
+          const savedUniMap = new Map<string, UniverseInfo>(p.universes.map((u: UniverseInfo) => [u.id, u]));
+          setUniverses(
+            UNIVERSES_CONFIG.map((u) => {
+              const su = savedUniMap.get(u.id);
+              if (!su) return u;
+              return {
+                ...u,
+                unlocked: typeof su.unlocked === 'boolean' ? su.unlocked : u.unlocked,
+              };
+            })
+          );
+        }
+        if (p.activeArchetypeId && typeof p.activeArchetypeId === 'string') {
+          setActiveArchetypeId(p.activeArchetypeId as CombatArchetypeId);
         }
         if (p.collectors && Array.isArray(p.collectors)) {
           const savedColMap = new Map<string, CollectorState>(p.collectors.map((c: CollectorState) => [c.id, c]));
@@ -1460,6 +1502,33 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCircuitNodes(MULTIVERSE_CIRCUIT_NODES.map((cn) => ({ ...cn, unlocked: unlockedSet.has(cn.id) })));
         }
         if (p.autonomousModules) setAutonomousModules(p.autonomousModules);
+
+        // Offline Simulation Calculation
+        if (typeof p.lastSavedTimestamp === 'number' && p.lastSavedTimestamp > 0) {
+          const elapsedSeconds = Math.min(86400 * 2, Math.max(0, Math.floor((Date.now() - p.lastSavedTimestamp) / 1000)));
+          if (elapsedSeconds > 5) {
+            // Offline dimensional energy regen (+1.5/s)
+            const offlineEnergyGain = Math.floor(elapsedSeconds * 1.5);
+            setResources((prev) => ({
+              ...prev,
+              dimensionalEnergy: Math.min(prev.maxDimensionalEnergy, prev.dimensionalEnergy + offlineEnergyGain),
+            }));
+
+            // Offline collectors accumulation
+            setCollectors((prev) =>
+              prev.map((c) => {
+                if (!c.isUnlocked) return c;
+                const offlineAccumulated = c.ratePerSecond * elapsedSeconds;
+                const newAmount = Math.min(c.capacity, Math.round((c.currentAmount + offlineAccumulated) * 10) / 10);
+                return {
+                  ...c,
+                  currentAmount: newAmount,
+                  status: newAmount >= c.capacity ? 'FULL' : c.isAutomated ? 'AUTOMATED' : 'COLLECTING',
+                };
+              })
+            );
+          }
+        }
       }
     } catch {
       // Ignore
@@ -1473,16 +1542,35 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resources,
         baseSectors,
         inventoryItems,
+        storageCompartments,
+        defenseModuleDefs,
+        escalatedModules,
+        universes,
+        activeArchetypeId,
         circuitNodes,
         autonomousModules,
         collectors,
         automationUpgrades,
+        lastSavedTimestamp: Date.now(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch {
       // Ignore
     }
-  }, [resources, baseSectors, inventoryItems, circuitNodes, autonomousModules, collectors, automationUpgrades]);
+  }, [
+    resources,
+    baseSectors,
+    inventoryItems,
+    storageCompartments,
+    defenseModuleDefs,
+    escalatedModules,
+    universes,
+    activeArchetypeId,
+    circuitNodes,
+    autonomousModules,
+    collectors,
+    automationUpgrades,
+  ]);
 
   // Calculate storage capacity based on inventory sector level, upgrades and passives
   const storageBonusFromPassives = useMemo(() => {
@@ -1587,8 +1675,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }, [currentWave]);
 
-  // Autonomous equipment interval loop (Ticks every second in background)
+  // Autonomous equipment interval loop (Ticks only during active expedition combat)
   useEffect(() => {
+    if (mode !== 'EXPEDITION' || expeditionPhase !== 'COMBAT') return;
+
     const autoInterval = setInterval(() => {
       const now = Date.now();
       setAutonomousModules((prev) =>
@@ -1629,7 +1719,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 500);
 
     return () => clearInterval(autoInterval);
-  }, []);
+  }, [mode, expeditionPhase]);
 
   // Passive resource regeneration & Collector Accumulation Loop (Ticks every second)
   useEffect(() => {
@@ -2313,6 +2403,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tacticalData: 2,
           dimensionalMatrix: 0,
         });
+        setTower((prev) => ({
+          ...prev,
+          coreHp: prev.maxCoreHp || 1000,
+        }));
         setPlacedModules({});
         setSelectedHex(null);
         setSelectedDeployType(null);
@@ -2370,13 +2464,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Handle Defeat
   const handleDefeat = useCallback(() => {
     sound.playDefeat(0.2);
-    // Preserves protected cargo
+    // Preserves protected cargo and recovers 40% of volatile matter & combat data as salvage
+    const recoveredVolatileMatter = Math.round((volatileCargo.matter || 0) * 0.4);
+    const recoveredVolatileCombatData = Math.round((volatileCargo.combatData || 0) * 0.4);
+
     setResources((prev) => ({
       ...prev,
-      commonMatter: prev.commonMatter + protectedCargo.matter,
+      commonMatter: prev.commonMatter + protectedCargo.matter + recoveredVolatileMatter,
       techComponents: prev.techComponents + protectedCargo.techComponents,
       dimensionalMaterials: prev.dimensionalMaterials + protectedCargo.dimensionalMaterials,
-      combatData: prev.combatData + protectedCargo.combatData + Math.max(1, Math.floor(currentWave * 2)),
+      combatData: prev.combatData + protectedCargo.combatData + recoveredVolatileCombatData + Math.max(1, Math.floor(currentWave * 2)),
     }));
 
     // Transfer guaranteed protected items to station inventory
@@ -2394,7 +2491,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setExpeditionPhase('DEFEAT');
-  }, [protectedCargo, currentWave]);
+  }, [protectedCargo, volatileCargo, currentWave]);
 
   // Craft & Assemble Defense Module using real physical materials
   const craftDefenseModule = useCallback(
@@ -2594,15 +2691,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let count = 0;
       const updates: Record<string, PlacedModule> = {};
 
-      let remainingRes = combatResources;
+      let remainingNano = combatCurrencies.nanoMatter;
+      let remainingMicro = combatCurrencies.microCircuits;
+
       for (const k of hexKeys) {
         const mod = placedModules[k];
         if (!mod || mod.level >= 5) continue;
         const def = defenseModuleDefs[mod.type] || DEFAULT_MODULE_DEFS[mod.type];
-        const cost = Math.round(def.baseCost * 0.75 * mod.level);
-        if (remainingRes >= cost) {
-          remainingRes -= cost;
-          costSum += cost;
+        const baseCost = def.tacticalCost || {
+          nanoMatter: def.baseCost,
+          microCircuits: Math.max(1, Math.round(def.baseCost * 0.15)),
+          tacticalData: 0,
+          dimensionalMatrix: 0,
+        };
+        const reqNano = Math.round(baseCost.nanoMatter * 0.6 * mod.level);
+        const reqMicro = Math.max(1, Math.round(baseCost.microCircuits * 0.5 * mod.level));
+
+        if (remainingNano >= reqNano && remainingMicro >= reqMicro) {
+          remainingNano -= reqNano;
+          remainingMicro -= reqMicro;
+          costSum += reqNano;
           count++;
           const newMaxHp = Math.round(mod.maxHp * 1.35);
           const hpHeal = Math.round(newMaxHp * 0.35);
@@ -2619,13 +2727,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (count > 0) {
-        setCombatResources(remainingRes);
+        setCombatCurrencies((prev) => ({
+          ...prev,
+          nanoMatter: remainingNano,
+          microCircuits: remainingMicro,
+        }));
+        setCombatResources(remainingNano);
         setPlacedModules((prev) => ({ ...prev, ...updates }));
         sound.playUpgrade(0.14);
       }
       return { upgradedCount: count, totalCost: costSum };
     },
-    [placedModules, defenseModuleDefs, combatResources]
+    [placedModules, defenseModuleDefs, combatCurrencies]
   );
 
   const batchRepairModules = useCallback(
@@ -2634,15 +2747,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let count = 0;
       const updates: Record<string, PlacedModule> = {};
 
-      let remainingRes = combatResources;
+      let remainingNano = combatCurrencies.nanoMatter;
+      let remainingMicro = combatCurrencies.microCircuits;
+
       for (const k of hexKeys) {
         const mod = placedModules[k];
         if (!mod || (mod.currentHp ?? mod.maxHp) >= mod.maxHp) continue;
         const def = defenseModuleDefs[mod.type] || DEFAULT_MODULE_DEFS[mod.type];
-        const repairCost = Math.max(10, Math.round(def.baseCost * 0.25));
-        if (remainingRes >= repairCost) {
-          remainingRes -= repairCost;
-          costSum += repairCost;
+        const baseCost = def.tacticalCost || {
+          nanoMatter: def.baseCost,
+          microCircuits: 2,
+          tacticalData: 0,
+          dimensionalMatrix: 0,
+        };
+        const reqNano = Math.max(8, Math.round(baseCost.nanoMatter * 0.25));
+        const reqMicro = Math.max(1, Math.round(baseCost.microCircuits * 0.25));
+
+        if (remainingNano >= reqNano && remainingMicro >= reqMicro) {
+          remainingNano -= reqNano;
+          remainingMicro -= reqMicro;
+          costSum += reqNano;
           count++;
           updates[k] = {
             ...mod,
@@ -2652,13 +2776,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (count > 0) {
-        setCombatResources(remainingRes);
+        setCombatCurrencies((prev) => ({
+          ...prev,
+          nanoMatter: remainingNano,
+          microCircuits: remainingMicro,
+        }));
+        setCombatResources(remainingNano);
         setPlacedModules((prev) => ({ ...prev, ...updates }));
         sound.playUpgrade(0.14);
       }
       return { repairedCount: count, totalCost: costSum };
     },
-    [placedModules, defenseModuleDefs, combatResources]
+    [placedModules, defenseModuleDefs, combatCurrencies]
   );
 
   const recyclePlacedModule = useCallback(

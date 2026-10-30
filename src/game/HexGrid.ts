@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as THREE from 'three';
-
 // Hexagon size reduced by 50% (from 1.35 to 0.68) to double density without increasing overall distance
 export const HEX_RADIUS = 0.68; // Distance from center to vertex
 export const HEX_HEIGHT = 0.12;
@@ -42,10 +40,10 @@ export function getHexesInAoE(center: HexCoord, radius: number): HexCoord[] {
 }
 
 // Convert axial (q, r) to 3D world coordinates (X, Y=0, Z)
-export function hexToWorld(q: number, r: number, radius = HEX_RADIUS): THREE.Vector3 {
+export function hexToWorld(q: number, r: number, radius = HEX_RADIUS): { x: number; y: number; z: number } {
   const x = radius * Math.sqrt(3) * (q + r / 2);
   const z = radius * (3 / 2) * r;
-  return new THREE.Vector3(x, 0, z);
+  return { x, y: 0, z };
 }
 
 // Generate spiral rings of hexagons from radius minRing to maxRing
@@ -89,31 +87,3 @@ export function getPlayableGrid(minRing = 3, maxRing = 11): HexCoord[] {
   return grid;
 }
 
-// Create procedural 3D Hexagon tile geometry
-export function createHexGeometry(radius = HEX_RADIUS - 0.08, height = HEX_HEIGHT): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i + Math.PI / 6;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    if (i === 0) {
-      shape.moveTo(x, y);
-    } else {
-      shape.lineTo(x, y);
-    }
-  }
-  shape.closePath();
-
-  const extrudeSettings = {
-    depth: height,
-    bevelEnabled: true,
-    bevelSegments: 1,
-    steps: 1,
-    bevelSize: 0.04,
-    bevelThickness: 0.04,
-  };
-
-  const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  geom.rotateX(Math.PI / 2); // Place horizontal on XZ plane
-  return geom;
-}

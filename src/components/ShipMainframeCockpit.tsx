@@ -72,6 +72,47 @@ type SubsystemKey =
   | 'weapons'
   | 'expedition';
 
+export type PrimaryModuleKey = 'command' | 'industry' | 'fabricator' | 'circuits' | 'hangar';
+
+export interface PrimaryModule {
+  id: PrimaryModuleKey;
+  label: string;
+  subLabel: string;
+  badge: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+export const PRIMARY_MODULES: PrimaryModule[] = [
+  { id: 'command', label: 'Comando & Base', subLabel: 'Status, Estoque e Salto', badge: 'BASE', icon: Compass },
+  { id: 'industry', label: 'Complexo Industrial', subLabel: 'Separador, Forno e Refinaria', badge: 'PROD', icon: Factory },
+  { id: 'fabricator', label: 'Construtor & Montagem', subLabel: 'Peças, Máquinas e Drones', badge: 'FAB', icon: Hammer },
+  { id: 'circuits', label: 'Pesquisa & Circuitos', subLabel: 'Matriz do Multiverso', badge: 'TECH', icon: Cpu },
+  { id: 'hangar', label: 'Hangar & Frotas', subLabel: 'Esquadrões Bélicos e Módulos', badge: 'FROTA', icon: Shield },
+];
+
+export const getPrimaryModuleFromTab = (tab: SubsystemKey): PrimaryModuleKey => {
+  switch (tab) {
+    case 'command':
+    case 'reactor':
+    case 'shields':
+    case 'expedition':
+      return 'command';
+    case 'collectors':
+    case 'separator':
+    case 'furnace':
+    case 'refinery':
+      return 'industry';
+    case 'fabricator':
+      return 'fabricator';
+    case 'circuits':
+      return 'circuits';
+    case 'weapons':
+      return 'hangar';
+    default:
+      return 'command';
+  }
+};
+
 interface SubsystemTab {
   key: SubsystemKey;
   label: string;
@@ -287,130 +328,134 @@ export const ShipMainframeCockpit: React.FC = () => {
           2. CORPO PRINCIPAL: NAVEGAÇÃO LIMPA E CONTEÚDO ESPAÇOSO
          ========================================================================= */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
-        {/* Barra Lateral de Navegação Organizada por Grupos Lógicos */}
-        <nav className="w-full lg:w-60 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/60 p-2 lg:p-3 flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto shrink-0 select-none">
-          {/* Grupo 1: Comando Central & Status */}
-          <div className="flex lg:flex-col gap-1 shrink-0">
-            <div className="hidden lg:block text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2.5 py-1">
-              Comando Central
-            </div>
-            {TABS.filter((t) => t.category === 'command').map((tab) => {
-              const isSelected = activeTab === tab.key;
-              const Icon = tab.icon;
+        {/* Barra Lateral de Navegação Organizada em 5 Módulos Principais */}
+        <nav className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/60 p-2 lg:p-3 flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-y-auto shrink-0 select-none">
+          <div className="hidden lg:block text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2.5 py-1">
+            Consoles de Comando
+          </div>
 
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    sound.playClick();
-                  }}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap text-left ${
-                    isSelected
-                      ? 'bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 font-semibold shadow-sm'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-900/80 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-cyan-400' : 'text-slate-400'}`} />
-                    <span className="font-semibold">{tab.label}</span>
+          {PRIMARY_MODULES.map((mod) => {
+            const isSelected = getPrimaryModuleFromTab(activeTab) === mod.id;
+            const Icon = mod.icon;
+            const hasNotification = mod.id === 'industry' && anyCollectorFull;
+
+            return (
+              <button
+                key={mod.id}
+                onClick={() => {
+                  sound.playClick();
+                  if (mod.id === 'command') setActiveTab('command');
+                  else if (mod.id === 'industry') setActiveTab('separator');
+                  else if (mod.id === 'fabricator') setActiveTab('fabricator');
+                  else if (mod.id === 'circuits') setActiveTab('circuits');
+                  else if (mod.id === 'hangar') setActiveTab('weapons');
+                }}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap text-left ${
+                  isSelected
+                    ? 'bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 font-semibold shadow-sm ring-1 ring-cyan-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900/80 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold">{mod.label}</span>
+                    <span className="text-[10px] text-slate-400 font-normal hidden lg:block truncate">{mod.subLabel}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-cyan-400 border border-cyan-800/40">
-                    STATUS
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  {hasNotification && (
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Reservatório Cheio" />
+                  )}
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                    isSelected ? 'bg-cyan-900/60 text-cyan-300 border-cyan-700/50' : 'bg-slate-900 text-slate-400 border-slate-800'
+                  }`}>
+                    {mod.badge}
                   </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="hidden lg:block h-px bg-slate-800/80 my-0.5" />
-
-          {/* Grupo 2: Produção & Coleta */}
-          <div className="flex lg:flex-col gap-1 shrink-0">
-            <div className="hidden lg:block text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2.5 py-1">
-              Produção & Coleta
-            </div>
-            {TABS.filter((t) => t.category === 'production').map((tab) => {
-              const isSelected = activeTab === tab.key;
-              const tabSector = tab.sectorId ? baseSectors[tab.sectorId] : null;
-              const isTabInstalled = tabSector ? tabSector.installed : true;
-              const Icon = tab.icon;
-
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    sound.playClick();
-                  }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap text-left ${
-                    isSelected
-                      ? 'bg-slate-800 text-white font-semibold shadow-sm'
-                      : isTabInstalled
-                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-                      : 'text-slate-600 hover:text-slate-400'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-sky-400' : 'text-slate-500'}`} />
-                    <span>{tab.label}</span>
-                  </div>
-
-                  {tab.key === 'collectors' && anyCollectorFull && (
-                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 ml-1.5" title="Reservatório cheio" />
-                  )}
-                  {tabSector && !tabSector.installed && (
-                    <span className="text-[10px] text-slate-500 font-mono ml-1.5">Bloq</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="hidden lg:block h-px bg-slate-800/80 my-0.5" />
-
-          {/* Grupo 3: Sistemas da Nave */}
-          <div className="flex lg:flex-col gap-1 shrink-0">
-            <div className="hidden lg:block text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2.5 py-1">
-              Sistemas da Estação
-            </div>
-            {TABS.filter((t) => t.category === 'ship' || t.category === 'tactical').map((tab) => {
-              const isSelected = activeTab === tab.key;
-              const tabSector = tab.sectorId ? baseSectors[tab.sectorId] : null;
-              const isTabInstalled = tabSector ? tabSector.installed : true;
-              const Icon = tab.icon;
-
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    sound.playClick();
-                  }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap text-left ${
-                    isSelected
-                      ? 'bg-slate-800 text-white font-semibold shadow-sm'
-                      : isTabInstalled
-                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
-                      : 'text-slate-600 hover:text-slate-400'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-sky-400' : 'text-slate-500'}`} />
-                    <span>{tab.label}</span>
-                  </div>
-
-                  {tabSector && !tabSector.installed && (
-                    <span className="text-[10px] text-slate-500 font-mono ml-1.5">Bloq</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                </div>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Área Central de Conteúdo */}
         <main className="flex-1 flex flex-col p-4 sm:p-6 overflow-y-auto bg-slate-950">
+          {/* Sub-Navegação de Comando & Base */}
+          {getPrimaryModuleFromTab(activeTab) === 'command' && (
+            <div className="flex items-center gap-1.5 mb-4 p-1 rounded-xl bg-slate-900/90 border border-slate-800/80 overflow-x-auto shrink-0 select-none">
+              <button
+                onClick={() => { setActiveTab('command'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'command' ? 'bg-cyan-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Cidadela & Estoque</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('reactor'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'reactor' || activeTab === 'shields' ? 'bg-cyan-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Setores da Estação</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('expedition'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'expedition' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>Salto Dimensional</span>
+              </button>
+            </div>
+          )}
+
+          {/* Sub-Navegação do Complexo Industrial */}
+          {getPrimaryModuleFromTab(activeTab) === 'industry' && (
+            <div className="flex items-center gap-1.5 mb-4 p-1 rounded-xl bg-slate-900/90 border border-slate-800/80 overflow-x-auto shrink-0 select-none">
+              <button
+                onClick={() => { setActiveTab('separator'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'separator' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span>Separador [MK-1003]</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('furnace'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'furnace' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Factory className="w-3.5 h-3.5" />
+                <span>Forno Térmico [MK-2001]</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('refinery'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'refinery' ? 'bg-cyan-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <FlaskConical className="w-3.5 h-3.5" />
+                <span>Refinaria Química [MK-2203]</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('collectors'); sound.playClick(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'collectors' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Coletores Espaciais [MK-100x]</span>
+                {anyCollectorFull && <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-1" />}
+              </button>
+            </div>
+          )}
           {/* Header do Setor Ativo */}
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80 gap-3 flex-wrap">
             <div className="flex items-center gap-2.5">
@@ -1252,60 +1297,73 @@ export const ShipMainframeCockpit: React.FC = () => {
                     </div>
 
                     {/* 4 Indicadores de Telemetria Industrial ao Vivo */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="flex items-center gap-1 font-mono">
-                            <Flame className="w-3.5 h-3.5 text-amber-400" />
-                            CADINHO FUSÃO
-                          </span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                        </div>
-                        <span className="font-mono text-sm sm:text-base font-bold text-amber-300 tracking-tight">
-                          1820 °C
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono">Plasma de Indução</span>
-                      </div>
+                    {(() => {
+                      const oreTotal =
+                        (inventoryItems.find((i) => i.id === 'mat.iron_ore')?.quantity || 0) +
+                        (inventoryItems.find((i) => i.id === 'mat.titanium_ore')?.quantity || 0) +
+                        (inventoryItems.find((i) => i.id === 'mat.copper_ore')?.quantity || 0);
+                      const ingotTotal =
+                        (inventoryItems.find((i) => i.id === 'mat.recovered_iron')?.quantity || 0) +
+                        (inventoryItems.find((i) => i.id === 'mat.titanium_ingot')?.quantity || 0) +
+                        (inventoryItems.find((i) => i.id === 'mat.copper_ingot')?.quantity || 0);
 
-                      <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="flex items-center gap-1 font-mono">
-                            <Wind className="w-3.5 h-3.5 text-orange-400" />
-                            ATMOSFERA INERTE
-                          </span>
-                        </div>
-                        <span className="font-mono text-sm sm:text-base font-bold text-orange-300 tracking-tight">
-                          Argônio 99.4%
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono">Anti-oxidação ativa</span>
-                      </div>
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400">
+                              <span className="flex items-center gap-1 font-mono">
+                                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                                MINÉRIO BRUTO
+                              </span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            </div>
+                            <span className="font-mono text-sm sm:text-base font-bold text-amber-300 tracking-tight">
+                              {oreTotal} un
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">No Estoque da Estação</span>
+                          </div>
 
-                      <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="flex items-center gap-1 font-mono">
-                            <Hammer className="w-3.5 h-3.5 text-yellow-400" />
-                            PRENSA FORJA
-                          </span>
-                        </div>
-                        <span className="font-mono text-sm sm:text-base font-bold text-yellow-300 tracking-tight">
-                          420 MPa
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono">Compactação Hidráulica</span>
-                      </div>
+                          <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400">
+                              <span className="flex items-center gap-1 font-mono">
+                                <Layers className="w-3.5 h-3.5 text-orange-400" />
+                                RESERVATÓRIO BROCA
+                              </span>
+                            </div>
+                            <span className="font-mono text-sm sm:text-base font-bold text-orange-300 tracking-tight">
+                              {Math.round(minCol?.currentAmount || 0)} / {minCol?.capacity || 200} kg
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">MK-1004 Minerais</span>
+                          </div>
 
-                      <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="flex items-center gap-1 font-mono">
-                            <Factory className="w-3.5 h-3.5 text-emerald-400" />
-                            EFICIÊNCIA FORJA
-                          </span>
+                          <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400">
+                              <span className="flex items-center gap-1 font-mono">
+                                <Box className="w-3.5 h-3.5 text-yellow-400" />
+                                LINGOTES PRONTOS
+                              </span>
+                            </div>
+                            <span className="font-mono text-sm sm:text-base font-bold text-yellow-300 tracking-tight">
+                              {ingotTotal} un
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">Ferro, Titânio & Cobre</span>
+                          </div>
+
+                          <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400">
+                              <span className="flex items-center gap-1 font-mono">
+                                <Factory className="w-3.5 h-3.5 text-emerald-400" />
+                                MULTIPLICADOR
+                              </span>
+                            </div>
+                            <span className="font-mono text-sm sm:text-base font-bold text-emerald-300 tracking-tight">
+                              {furnaceBatch === 'max' ? 'Lote MÁX' : `${furnaceBatch}x`}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">Processamento Ativo</span>
+                          </div>
                         </div>
-                        <span className="font-mono text-sm sm:text-base font-bold text-emerald-300 tracking-tight">
-                          95.2%
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono">Recuperação de Calor</span>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Alerta de Bloqueio se a Broca de Minérios não estiver construída */}
@@ -1550,7 +1608,7 @@ export const ShipMainframeCockpit: React.FC = () => {
                                 {/* FLUXO VISUAL INDICADOR */}
                                 <div className="flex items-center gap-1.5 text-slate-600 text-[10px] pl-14">
                                   <ArrowRight className="w-3 h-3 text-amber-400 shrink-0" />
-                                  <span className="text-amber-400/90 font-bold">MK-2001 (1820°C)</span>
+                                  <span className="text-amber-400/90 font-bold">Forno Térmico MK-2001</span>
                                 </div>
 
                                 {/* SAÍDA / RENDIMENTO */}

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Hammer,
   CheckCircle2,
@@ -36,20 +36,22 @@ interface FabricatorViewProps {
   highlightRecipeId?: string;
 }
 
-type FabricatorFilterCategory = 'all' | 'modules' | 'tools';
+type FabricatorFilterCategory = 'all' | 'components' | 'modules' | 'tools';
 type AvailabilityFilter = 'all' | 'ready' | 'missing' | 'completed';
 
 export interface FabricatorProject {
   id: string;
   code: string;
   name: string;
-  kind: 'module' | 'tool';
-  subCategory: 'infrastructure' | 'expansion' | 'automation' | 'operational_tool' | 'tactical_equipment';
+  kind: 'component' | 'module' | 'tool';
+  subCategory: 'parts' | 'infrastructure' | 'expansion' | 'automation' | 'operational_tool' | 'tactical_equipment';
   tier: number;
   energyCost: number;
   costMatter?: number;
   costTech?: number;
   inputItems: { itemId: string; quantity: number }[];
+  outputItemId?: string;
+  outputQuantity?: number;
   description: string;
   effectBadge: string;
   unlockFeature?: string;
@@ -81,6 +83,7 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
     craftDefenseModule,
     tower,
     setTower,
+    canAcceptCargo,
   } = useGame();
 
   const [activeCategory, setActiveCategory] = useState<FabricatorFilterCategory>('all');
@@ -91,19 +94,24 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
 
   // Estados de grupos recolhidos
-  const [collapsedGroups, setCollapsedGroups] = useState<{ modules: boolean; tools: boolean }>({
+  const [collapsedGroups, setCollapsedGroups] = useState<{
+    components: boolean;
+    modules: boolean;
+    tools: boolean;
+  }>({
+    components: false,
     modules: false,
     tools: false,
   });
 
-  const toggleGroup = (group: 'modules' | 'tools') => {
+  const toggleGroup = (group: 'components' | 'modules' | 'tools') => {
     setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
     sound.playClick();
   };
 
   const toggleAllGroups = () => {
-    const allCollapsed = collapsedGroups.modules && collapsedGroups.tools;
-    setCollapsedGroups({ modules: !allCollapsed, tools: !allCollapsed });
+    const allCollapsed = collapsedGroups.components && collapsedGroups.modules && collapsedGroups.tools;
+    setCollapsedGroups({ components: !allCollapsed, modules: !allCollapsed, tools: !allCollapsed });
     sound.playClick();
   };
 
@@ -111,11 +119,64 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
   const oreCollectorUnlocked = !!collectors.find((c) => c.id === 'col_minerals')?.isUnlocked;
   const gasCollectorUnlocked = !!collectors.find((c) => c.id === 'col_gases')?.isUnlocked;
   const inventoryInstalled = !!baseSectors.inventory?.installed;
-  const refineryInstalled = !!baseSectors.refinery?.installed;
 
-  // Catálogo estritamente organizado: Módulos [MK-xxxx] e Ferramentas [FR-xxxx]
+  // Persistência local de máquinas individuais construídas
+  const [constructedMachineIds, setConstructedMachineIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('torre_constructed_machines');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const markMachineConstructed = useCallback((id: string) => {
+    setConstructedMachineIds((prev) => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      try {
+        localStorage.setItem('torre_constructed_machines', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // Catálogo estritamente organizado: Peças [RC-xxxx], Módulos [MK-xxxx] e Ferramentas [FR-xxxx]
   const allProjects = useMemo<FabricatorProject[]>(() => {
     const projects: FabricatorProject[] = [];
+
+    // =========================================================================
+    // 0. PEÇAS & COMPONENTES DE MONTAGEM [RC-xxxx] (Repetíveis para construção)
+    // =========================================================================
+    const rawConfigComponents = GAME_RECIPES.filter(
+      (r) =>
+        r.station === 'assembler' &&
+        (r.id.startsWith('craft_part_') ||
+          r.code?.startsWith('RC-') ||
+          (r.outputItems && r.outputItems.length > 0 && !r.code?.startsWith('MK-') && !r.code?.startsWith('FR-')))
+    );
+
+    rawConfigComponents.forEach((comp) => {
+      const primaryOut = comp.outputItems?.[0];
+      const outputItemId = primaryOut?.itemId;
+      const outputQuantity = primaryOut?.quantity || 1;
+      const outMat = outputItemId ? GAME_MATERIALS.find((m) => m.id === outputItemId) : undefined;
+      projects.push({
+        id: comp.id,
+        code: comp.code || 'RC-1000',
+        name: comp.name,
+        kind: 'component',
+        subCategory: 'parts',
+        tier: comp.tier || 1,
+        energyCost: comp.energyCost || 3,
+        inputItems: comp.inputItems || [],
+        outputItemId,
+        outputQuantity,
+        description: comp.description,
+        effectBadge: outMat ? `Produz: ${outputQuantity}x ${outMat.name}` : 'Peça Intermediária',
+        isConstructed: false,
+      });
+    });
 
     // =========================================================================
     // 1. MÓDULOS DE INFRAESTRUTURA & MÁQUINAS [MK-xxxx]
@@ -125,23 +186,21 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
     );
 
     rawConfigModules.forEach((mod) => {
-      let isConstructed = false;
+      let isConstructed = constructedMachineIds.includes(mod.id);
       let badge = 'Módulo Permanente';
 
       if (mod.unlockFeature === 'unlock_minerals_collector') {
-        isConstructed = oreCollectorUnlocked;
+        if (oreCollectorUnlocked) isConstructed = true;
         badge = 'Desbloqueia Coletor de Minérios';
       } else if (mod.unlockFeature === 'unlock_inventory_sector') {
-        isConstructed = inventoryInstalled;
+        if (inventoryInstalled) isConstructed = true;
         badge = 'Desbloqueia Silos & Expedição';
-      } else if (
-        mod.unlockFeature === 'unlock_furnace_sector' ||
-        mod.unlockFeature === 'unlock_refinery_sector'
-      ) {
-        isConstructed = refineryInstalled;
-        badge = mod.id.includes('furnace') ? 'Desbloqueia Setor Forno' : 'Desbloqueia Refinaria';
+      } else if (mod.id === 'craft_furnace_sector' || mod.unlockFeature === 'unlock_furnace_sector') {
+        badge = 'Desbloqueia Forno de Recuperação Térmica';
+      } else if (mod.id === 'craft_chemical_refinery' || mod.unlockFeature === 'unlock_refinery_sector') {
+        badge = 'Desbloqueia Refinaria Química & Reator';
       } else if (mod.unlockFeature === 'unlock_gas_collector') {
-        isConstructed = gasCollectorUnlocked;
+        if (gasCollectorUnlocked) isConstructed = true;
         badge = 'Desbloqueia Coletor de Gases';
       }
 
@@ -320,7 +379,7 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
     oreCollectorUnlocked,
     gasCollectorUnlocked,
     inventoryInstalled,
-    refineryInstalled,
+    constructedMachineIds,
     automationUpgrades,
     autonomousModules,
     defenseModuleDefs,
@@ -343,16 +402,39 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
       if (!hasAll) return false;
     }
 
+    if (project.outputItemId) {
+      const mat = GAME_MATERIALS.find((m) => m.id === project.outputItemId);
+      const isGas = mat?.physicalState === 'gas' || mat?.family === 'gas';
+      const weight = isGas ? 0 : (mat?.unitWeight || 1) * (project.outputQuantity || 1) * mult;
+      const liquid = isGas ? (project.outputQuantity || 1) * mult : 0;
+      const check = canAcceptCargo(weight, liquid);
+      if (!check.allowed) return false;
+    }
+
     return true;
   };
 
   const handleExecuteProject = (project: FabricatorProject) => {
-    const isMod = project.kind === 'module';
-    const mult = isMod ? 1 : batchMultiplier;
+    const isRepeatable = project.kind === 'component' || project.kind === 'tool';
+    const mult = isRepeatable ? batchMultiplier : 1;
 
     if (!canAffordProject(project, mult)) {
       sound.playAlert();
       return;
+    }
+
+    // Caso produza item físico, valida capacidade de estoque
+    if (project.outputItemId) {
+      const mat = GAME_MATERIALS.find((m) => m.id === project.outputItemId);
+      const isGas = mat?.physicalState === 'gas' || mat?.family === 'gas';
+      const weight = isGas ? 0 : (mat?.unitWeight || 1) * (project.outputQuantity || 1) * mult;
+      const liquid = isGas ? (project.outputQuantity || 1) * mult : 0;
+      const check = canAcceptCargo(weight, liquid);
+      if (!check.allowed) {
+        setActionSuccessNotice(check.reason || 'Armazenamento insuficiente!');
+        sound.playAlert();
+        return;
+      }
     }
 
     // Caso seja módulo bélico da malha hexagonal, delega para craftDefenseModule que cuida da dedução exata
@@ -390,7 +472,20 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
       });
     }
 
-    if (project.unlockFeature === 'unlock_minerals_collector') {
+    if (project.outputItemId) {
+      const producedQty = (project.outputQuantity || 1) * mult;
+      setInventoryItems((prev) => {
+        const next = [...prev];
+        const idx = next.findIndex((item) => item.id === project.outputItemId);
+        if (idx >= 0) {
+          next[idx] = { ...next[idx], quantity: next[idx].quantity + producedQty };
+        }
+        return next;
+      });
+      const matName = getMaterialDisplayName(project.outputItemId);
+      setActionSuccessNotice(`Peça forjada: +${producedQty}x ${matName} armazenada nos Silos!`);
+    } else if (project.unlockFeature === 'unlock_minerals_collector') {
+      markMachineConstructed(project.id);
       setCollectors((prev) =>
         prev.map((c) =>
           c.id === 'col_minerals' ? { ...c, isUnlocked: true, status: 'COLLECTING' } : c
@@ -398,27 +493,37 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
       );
       setActionSuccessNotice('Coletor de Minério [MK-1004] construído e operando no cinturão!');
     } else if (project.unlockFeature === 'unlock_inventory_sector') {
+      markMachineConstructed(project.id);
       setBaseSectors((prev) => ({
         ...prev,
         inventory: { ...prev.inventory, installed: true, level: 1 },
       }));
       setActionSuccessNotice('Hangar de Estoque Industrial [MK-1005] construído! Expedições desbloqueadas.');
-    } else if (
-      project.unlockFeature === 'unlock_refinery_sector' ||
-      project.unlockFeature === 'unlock_furnace_sector'
-    ) {
+    } else if (project.id === 'craft_furnace_sector' || project.unlockFeature === 'unlock_furnace_sector') {
+      markMachineConstructed('craft_furnace_sector');
       setBaseSectors((prev) => ({
         ...prev,
         refinery: { ...prev.refinery, installed: true, level: 1 },
       }));
-      setActionSuccessNotice('Módulo Industrial construído! Setores de processamento ativados.');
+      setActionSuccessNotice('Forno de Recuperação Térmica [MK-2001] construído! Fundição térmica ativada.');
+    } else if (project.id === 'craft_chemical_refinery' || project.unlockFeature === 'unlock_refinery_sector') {
+      markMachineConstructed('craft_chemical_refinery');
+      setBaseSectors((prev) => ({
+        ...prev,
+        refinery: { ...prev.refinery, installed: true, level: 2 },
+      }));
+      setActionSuccessNotice('Refinaria Química & Reator [MK-2203] construída! Fracionamento químico avançado ativado.');
     } else if (project.unlockFeature === 'unlock_gas_collector') {
+      markMachineConstructed(project.id);
       setCollectors((prev) =>
         prev.map((c) =>
           c.id === 'col_gases' ? { ...c, isUnlocked: true, status: 'COLLECTING' } : c
         )
       );
       setActionSuccessNotice('Coletor de Gases Estelares [MK-2202] construído e captando no vácuo!');
+    } else if (project.kind === 'module') {
+      markMachineConstructed(project.id);
+      setActionSuccessNotice(`Máquina ${project.name} montada com sucesso!`);
     } else if (project.automationId) {
       installAutomationUpgrade(project.automationId);
       setActionSuccessNotice(`Módulo ${project.name} instalado e integrado à estação!`);
@@ -434,9 +539,11 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
 
   const filteredProjects = useMemo(() => {
     return allProjects.filter((p) => {
-      const mult = p.kind === 'module' ? 1 : batchMultiplier;
+      const isRepeatable = p.kind === 'component' || p.kind === 'tool';
+      const mult = isRepeatable ? batchMultiplier : 1;
       const affordable = canAffordProject(p, mult);
 
+      if (activeCategory === 'components' && p.kind !== 'component') return false;
       if (activeCategory === 'modules' && p.kind !== 'module') return false;
       if (activeCategory === 'tools' && p.kind !== 'tool') return false;
 
@@ -458,9 +565,11 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
     });
   }, [allProjects, activeCategory, availabilityFilter, filterSearch, batchMultiplier, resources, inventoryItems]);
 
+  const componentProjects = filteredProjects.filter((p) => p.kind === 'component');
   const moduleProjects = filteredProjects.filter((p) => p.kind === 'module');
   const toolProjects = filteredProjects.filter((p) => p.kind === 'tool');
 
+  const readyComponentsCount = componentProjects.filter((p) => canAffordProject(p, batchMultiplier)).length;
   const readyModulesCount = moduleProjects.filter((p) => canAffordProject(p, 1)).length;
   const readyToolsCount = toolProjects.filter((p) => canAffordProject(p, batchMultiplier)).length;
 
@@ -562,8 +671,9 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { id: 'all', label: `Todos (${filteredProjects.length})` },
-              { id: 'modules', label: `Módulos da Torre (${moduleProjects.length})` },
-              { id: 'tools', label: `Ferramentas & Dispositivos (${toolProjects.length})` },
+              { id: 'components', label: `Peças & Componentes (${componentProjects.length})` },
+              { id: 'modules', label: `Máquinas & Infraestrutura (${moduleProjects.length})` },
+              { id: 'tools', label: `Ferramentas & Drones (${toolProjects.length})` },
             ].map((cat) => (
               <button
                 key={cat.id}
@@ -571,7 +681,7 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
                   setActiveCategory(cat.id as FabricatorFilterCategory);
                   sound.playClick();
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition cursor-pointer ${
                   activeCategory === cat.id
                     ? 'bg-slate-800 text-sky-300 border border-slate-700 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
@@ -595,7 +705,7 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
                   setAvailabilityFilter(f.id as AvailabilityFilter);
                   sound.playClick();
                 }}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition cursor-pointer ${
                   availabilityFilter === f.id
                     ? 'bg-sky-950/80 text-sky-300 border border-sky-600/50 font-bold'
                     : 'text-slate-400 hover:text-slate-200'
@@ -608,9 +718,50 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
         </div>
       </div>
 
-      {/* 3. Lista de Módulos e Ferramentas */}
+      {/* 3. Lista de Componentes, Módulos e Ferramentas */}
       <div className="flex flex-col gap-3">
-        {/* GRUPO 1: MÓDULOS DE INFRAESTRUTURA [MK-xxxx] */}
+        {/* GRUPO 1: PEÇAS & COMPONENTES DE MONTAGEM [RC-xxxx] */}
+        {(activeCategory === 'all' || activeCategory === 'components') && componentProjects.length > 0 && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 overflow-hidden shadow-md">
+            <button
+              onClick={() => toggleGroup('components')}
+              className="w-full px-4 py-2.5 bg-slate-900/80 hover:bg-slate-900 border-b border-slate-800 flex items-center justify-between text-left cursor-pointer transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-lg bg-sky-950/80 border border-sky-500/40 flex items-center justify-center text-sky-400">
+                  <Box className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    Peças & Componentes de Montagem [RC-xxxx]
+                  </h4>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Fixadores, placas conformadas, cabos, suportes e conjuntos mecânicos para construção
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-sky-950/50 text-sky-300 border border-sky-800/60">
+                  {readyComponentsCount} fabricáveis
+                </span>
+                {collapsedGroups.components ? (
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {!collapsedGroups.components && (
+              <div className="divide-y divide-slate-800/80">
+                {componentProjects.map((project) => renderProjectRow(project))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* GRUPO 2: MÓDULOS DE INFRAESTRUTURA [MK-xxxx] */}
         {(activeCategory === 'all' || activeCategory === 'modules') && moduleProjects.length > 0 && (
           <div className="rounded-2xl border border-slate-800 bg-slate-950/70 overflow-hidden shadow-md">
             <button
@@ -702,8 +853,9 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
   );
 
   function renderProjectRow(project: FabricatorProject) {
+    const isRepeatable = project.kind === 'component' || project.kind === 'tool';
+    const mult = isRepeatable ? batchMultiplier : 1;
     const isModule = project.kind === 'module';
-    const mult = isModule ? 1 : batchMultiplier;
     const affordable = canAffordProject(project, mult);
     const isExpanded = expandedProjectId === project.id;
     const isHighlighted = highlightRecipeId === project.id;
@@ -842,7 +994,13 @@ export const FabricatorView: React.FC<FabricatorViewProps> = ({
                     : 'bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed opacity-50'
                 }`}
               >
-                <span>{isModule ? 'Construir Módulo' : `Fabricar Ferramenta${mult > 1 ? ` (${mult}x)` : ''}`}</span>
+                <span>
+                  {project.kind === 'component'
+                    ? `Forjar Peça${mult > 1 ? ` (${mult}x)` : ''}`
+                    : project.kind === 'tool'
+                    ? `Fabricar Ferramenta${mult > 1 ? ` (${mult}x)` : ''}`
+                    : 'Construir Módulo'}
+                </span>
               </button>
             )}
 

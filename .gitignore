@@ -1,8 +1,5 @@
+.env
+.direnv/
 node_modules/
-build/
 dist/
-coverage/
-.DS_Store
-*.log
-.env*
-!.env.example
+package-lock.json

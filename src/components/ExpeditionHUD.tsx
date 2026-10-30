@@ -33,6 +33,7 @@ import { ExpeditionCargoDrawer } from './ExpeditionCargoDrawer';
 export const ExpeditionHUD: React.FC = () => {
   const {
     setMode,
+    setExpeditionPhase,
     currentWave,
     tower,
     setTower,
@@ -269,17 +270,17 @@ export const ExpeditionHUD: React.FC = () => {
             </button>
           )}
 
-          {/* Return to Base */}
+          {/* Return to Base / Extraction */}
           <button
             onClick={() => {
               sound.playClick();
-              setMode('OPERATION');
+              setExpeditionPhase('EXTRACTION_CHECKPOINT');
             }}
             className="px-3 py-1.5 rounded-lg border border-cyan-600/70 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-            title="Retornar à Base (Modo Baixo)"
+            title="Retornar à Base (Extração Segura de Toda a Carga)"
           >
             <Radio className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Base</span>
+            <span>Extrair / Base</span>
           </button>
         </div>
       </div>

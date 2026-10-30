@@ -26,13 +26,13 @@
     "enemyDamageScalingFactor": 1.06,
     "dropRateMultiplierPerWave": 1.05,
     "lootTable": {
-      "ingot_iron": { "min": 1, "max": 3, "chance": 0.50 },
-      "metal_gold": { "min": 1, "max": 2, "chance": 0.35 },
-      "mineral_graphite": { "min": 1, "max": 2, "chance": 0.40 },
-      "canister_oxygen": { "min": 2, "max": 4, "chance": 0.45 },
-      "canister_hydrogen": { "min": 2, "max": 4, "chance": 0.40 },
-      "comp_organic": { "min": 1, "max": 1, "chance": 0.15 },
-      "comp_unknown": { "min": 1, "max": 1, "chance": 0.06 }
+      "mat.iron_ingot": { "min": 1, "max": 3, "chance": 0.50 },
+      "mat.gold_bar": { "min": 1, "max": 2, "chance": 0.35 },
+      "raw.graphite": { "min": 1, "max": 2, "chance": 0.40 },
+      "raw.oxygen_mix": { "min": 2, "max": 4, "chance": 0.45 },
+      "raw.hydrogen_gas": { "min": 2, "max": 4, "chance": 0.40 },
+      "raw.organic_residue": { "min": 1, "max": 1, "chance": 0.15 },
+      "scrap.unknown": { "min": 1, "max": 1, "chance": 0.06 }
     }
   },
   "scaling": {

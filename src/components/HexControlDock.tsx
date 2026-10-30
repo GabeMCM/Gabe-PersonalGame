@@ -36,87 +36,33 @@ interface ModuleDetailSpec {
   specialTrait: string;
 }
 
-const MODULE_SPECS: Record<ModuleType, ModuleDetailSpec> = {
-  pulse_cannon: {
-    id: 'pulse_cannon',
-    category: 'assault',
-    roleBadge: 'Patrulha · Cinético',
-    tacticalAdds: 'Dispara rajadas balísticas em linha reta de alta velocidade. Excelente contra enxames ágeis.',
-    dps: 32,
-    rangeHex: '3 Hex',
-    fireCadence: '1.4 t/s',
-    specialTrait: 'Tiro balístico linear anti-enxame com alta cadência.',
-  },
-  beam_cruiser: {
-    id: 'beam_cruiser',
-    category: 'assault',
-    roleBadge: 'Feixe · Térmico',
-    tacticalAdds: 'Laser contínuo sem tempo de voo, fundindo blindagens leves instantaneamente.',
-    dps: 48,
-    rangeHex: '4 Hex',
-    fireCadence: 'Contínuo',
-    specialTrait: 'Dano instantâneo térmico sem chance de esquiva.',
-  },
-  plasma_battery: {
-    id: 'plasma_battery',
-    category: 'heavy',
-    roleBadge: 'Artilharia · Plasma AoE',
-    tacticalAdds: 'Lança esferas balísticas de plasma com detonação em área. Sobrecarga ao ser destruída!',
-    dps: 70,
-    rangeHex: '5 Hex',
-    fireCadence: '0.65 t/s',
-    specialTrait: 'Explosão em área (2 hexágonos) e sobrecarga destrutiva ao cair.',
-  },
-  flux_harvester: {
-    id: 'flux_harvester',
-    category: 'support',
-    roleBadge: 'Vórtice · Suporte',
-    tacticalAdds: 'Gera vórtice que desacelera invasores em 30% num raio de 2 hexágonos e magnetiza matéria.',
-    dps: 15,
-    rangeHex: '4 Hex',
-    fireCadence: '2.5s pulso',
-    specialTrait: 'Lentidão em área (30%) e extração contínua de recursos.',
-  },
-  missile_launcher: {
-    id: 'missile_launcher',
-    category: 'heavy',
-    roleBadge: 'Mísseis · Teleguiado',
-    tacticalAdds: 'Dispara micro-mísseis balísticos em trajetória curva com rastro de ignição e impacto em área.',
-    dps: 65,
-    rangeHex: '5 Hex',
-    fireCadence: '0.8 t/s',
-    specialTrait: 'Salvas guiadas de longo alcance com explosão concentrada.',
-  },
-  tesla_coil: {
-    id: 'tesla_coil',
-    category: 'heavy',
-    roleBadge: 'Tesla · Choque em Cadeia',
-    tacticalAdds: 'Descargas elétricas ionizadas que saltam em cadeia entre até 3 inimigos e congelam.',
-    dps: 55,
-    rangeHex: '4 Hex',
-    fireCadence: '1.2 t/s',
-    specialTrait: 'Relâmpagos em arco que congelam e desaceleram alvos.',
-  },
-  railgun_bastion: {
-    id: 'railgun_bastion',
-    category: 'assault',
-    roleBadge: 'Railgun · Hiper-Penetração',
-    tacticalAdds: 'Projétil hiper-sônico retilíneo que atravessa todos os inimigos alinhados no eixo de tiro.',
-    dps: 90,
-    rangeHex: '6 Hex',
-    fireCadence: '0.45 t/s',
-    specialTrait: 'Perfuração linear completa de múltiplos alvos alinhados.',
-  },
-  nanobot_drone: {
-    id: 'nanobot_drone',
-    category: 'support',
-    roleBadge: 'Drone · Reparo & Cúpula',
-    tacticalAdds: 'Enxames de micro-drones que curam aliados num raio de 2 hexágonos e regeneram a Cidadela.',
-    dps: 20,
-    rangeHex: '3 Hex',
-    fireCadence: '3.0s pulso',
-    specialTrait: 'Cura aliados próximos (+25 HP) e regenera o Núcleo da Torre.',
-  },
+const MODULE_CATEGORY_MAP: Record<ModuleType, 'assault' | 'heavy' | 'support'> = {
+  pulse_cannon: 'assault',
+  beam_cruiser: 'assault',
+  plasma_battery: 'heavy',
+  flux_harvester: 'support',
+  missile_launcher: 'heavy',
+  tesla_coil: 'heavy',
+  railgun_bastion: 'assault',
+  nanobot_drone: 'support',
+};
+
+export const getModuleSpec = (
+  type: ModuleType,
+  defs: Record<ModuleType, any> = DEFAULT_MODULE_DEFS
+): ModuleDetailSpec => {
+  const def = defs[type] || DEFAULT_MODULE_DEFS[type];
+  const dps = Math.round((def.baseDamage || 30) * (def.baseFireRate || 1));
+  return {
+    id: type,
+    category: MODULE_CATEGORY_MAP[type] || 'assault',
+    roleBadge: def.role || 'Defesa Orbítica',
+    tacticalAdds: def.description || '',
+    dps,
+    rangeHex: `${def.baseRange || 3} Hex`,
+    fireCadence: `${def.baseFireRate || 1} t/s`,
+    specialTrait: def.tacticalSpecialty || def.description || '',
+  };
 };
 
 export const HexControlDock: React.FC = () => {
@@ -126,6 +72,7 @@ export const HexControlDock: React.FC = () => {
     setSelectedDeployType,
     placedModules,
     combatResources,
+    combatCurrencies,
     upgradePlacedModule,
     repairPlacedModule,
     batchUpgradeModules,
@@ -153,29 +100,61 @@ export const HexControlDock: React.FC = () => {
   // Filter deployed fleet by category
   const filteredPlaced = placedList.filter((m) => {
     if (filterCategory === 'all') return true;
-    return MODULE_SPECS[m.type]?.category === filterCategory;
+    return getModuleSpec(m.type, defenseModuleDefs).category === filterCategory;
   });
+
+  const getUpgradeCost = (mod: PlacedModule) => {
+    const def = defenseModuleDefs[mod.type] || DEFAULT_MODULE_DEFS[mod.type];
+    const baseCost = def.tacticalCost || {
+      nanoMatter: def.baseCost,
+      microCircuits: Math.max(1, Math.round(def.baseCost * 0.15)),
+      tacticalData: 0,
+      dimensionalMatrix: 0,
+    };
+    return {
+      nanoMatter: Math.round(baseCost.nanoMatter * 0.6 * mod.level),
+      microCircuits: Math.max(1, Math.round(baseCost.microCircuits * 0.5 * mod.level)),
+    };
+  };
+
+  const getRepairCost = (mod: PlacedModule) => {
+    const def = defenseModuleDefs[mod.type] || DEFAULT_MODULE_DEFS[mod.type];
+    const baseCost = def.tacticalCost || {
+      nanoMatter: def.baseCost,
+      microCircuits: 2,
+      tacticalData: 0,
+      dimensionalMatrix: 0,
+    };
+    return {
+      nanoMatter: Math.max(8, Math.round(baseCost.nanoMatter * 0.25)),
+      microCircuits: Math.max(1, Math.round(baseCost.microCircuits * 0.25)),
+    };
+  };
 
   // Batch actions calculation
   const upgradeableFiltered = filteredPlaced.filter((m) => m.level < 5);
-  const totalUpgradeCost = upgradeableFiltered.reduce((sum, m) => {
-    const def = defenseModuleDefs[m.type] || DEFAULT_MODULE_DEFS[m.type];
-    return sum + Math.round(def.baseCost * 0.75 * m.level);
-  }, 0);
+  const totalUpgradeNano = upgradeableFiltered.reduce((sum, m) => sum + getUpgradeCost(m).nanoMatter, 0);
+  const totalUpgradeMicro = upgradeableFiltered.reduce((sum, m) => sum + getUpgradeCost(m).microCircuits, 0);
+  const canBatchUpgrade =
+    upgradeableFiltered.length > 0 &&
+    combatCurrencies.nanoMatter >= totalUpgradeNano &&
+    combatCurrencies.microCircuits >= totalUpgradeMicro;
 
   const damagedFiltered = filteredPlaced.filter((m) => (m.currentHp ?? m.maxHp) < m.maxHp);
-  const totalRepairCost = damagedFiltered.reduce((sum, m) => {
-    const def = defenseModuleDefs[m.type] || DEFAULT_MODULE_DEFS[m.type];
-    return sum + Math.max(10, Math.round(def.baseCost * 0.25));
-  }, 0);
+  const totalRepairNano = damagedFiltered.reduce((sum, m) => sum + getRepairCost(m).nanoMatter, 0);
+  const totalRepairMicro = damagedFiltered.reduce((sum, m) => sum + getRepairCost(m).microCircuits, 0);
+  const canBatchRepair =
+    damagedFiltered.length > 0 &&
+    combatCurrencies.nanoMatter >= totalRepairNano &&
+    combatCurrencies.microCircuits >= totalRepairMicro;
 
   const handleBatchUpgrade = () => {
-    if (upgradeableFiltered.length === 0 || combatResources < totalUpgradeCost) return;
+    if (!canBatchUpgrade) return;
     batchUpgradeModules(upgradeableFiltered.map((m) => m.hexKey));
   };
 
   const handleBatchRepair = () => {
-    if (damagedFiltered.length === 0 || combatResources < totalRepairCost) return;
+    if (!canBatchRepair) return;
     batchRepairModules(damagedFiltered.map((m) => m.hexKey));
   };
 
@@ -201,9 +180,10 @@ export const HexControlDock: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-mono">
-            <Coins className="w-3 h-3 text-amber-400" />
-            <span>{combatResources}</span>
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-mono">
+            <span className="text-amber-400 font-bold">{combatCurrencies.nanoMatter} NM</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-cyan-300 font-bold">{combatCurrencies.microCircuits} MC</span>
           </div>
           <ChevronRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
         </button>
@@ -231,10 +211,10 @@ export const HexControlDock: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Recursos de Combate sem símbolo de raio para não confundir com matéria */}
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs font-semibold">
-              <Coins className="w-3 h-3 text-amber-400 shrink-0" />
-              <span>{combatResources}</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900 text-slate-200 font-mono text-[11px] font-semibold">
+              <span className="text-amber-400">{combatCurrencies.nanoMatter} NM</span>
+              <span className="text-slate-600">|</span>
+              <span className="text-cyan-300">{combatCurrencies.microCircuits} MC</span>
             </div>
 
             {/* Botão de Retrair */}
@@ -316,7 +296,7 @@ export const HexControlDock: React.FC = () => {
             ].map((tab) => {
               const count = placedList.filter((m) => {
                 if (tab.id === 'all') return true;
-                return MODULE_SPECS[m.type]?.category === tab.id;
+                return getModuleSpec(m.type, defenseModuleDefs).category === tab.id;
               }).length;
 
               return (
@@ -343,43 +323,55 @@ export const HexControlDock: React.FC = () => {
           <div className="grid grid-cols-2 gap-1.5">
             <button
               onClick={handleBatchUpgrade}
-              disabled={upgradeableFiltered.length === 0 || combatResources < totalUpgradeCost}
+              disabled={!canBatchUpgrade}
               className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex flex-col items-center justify-center transition-all cursor-pointer ${
                 upgradeableFiltered.length === 0
                   ? 'bg-slate-900/60 border border-slate-800 text-slate-500 cursor-not-allowed opacity-50'
-                  : combatResources >= totalUpgradeCost
+                  : canBatchUpgrade
                   ? 'bg-cyan-950/90 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-200 hover:border-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                   : 'bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed opacity-60'
               }`}
               title={
                 upgradeableFiltered.length === 0
                   ? 'Todas as embarcações do filtro já estão no nível máximo'
-                  : `Evoluir ${upgradeableFiltered.length} naves por ${totalUpgradeCost} NM`
+                  : `Evoluir ${upgradeableFiltered.length} naves por ${totalUpgradeNano} NM e ${totalUpgradeMicro} MC`
               }
             >
               <div className="flex items-center gap-1">
                 <TrendingUp className="w-3 h-3 text-cyan-400" />
                 <span>Evoluir Todas ({upgradeableFiltered.length})</span>
               </div>
-              <span className="text-[9px] text-amber-300 font-normal">
-                {upgradeableFiltered.length > 0 ? `-${totalUpgradeCost} NM` : 'Nenhum elegível'}
+              <span className="text-[9px] font-normal flex items-center gap-1">
+                {upgradeableFiltered.length > 0 ? (
+                  <>
+                    <span className={combatCurrencies.nanoMatter >= totalUpgradeNano ? 'text-amber-300' : 'text-rose-400 font-bold'}>
+                      -{totalUpgradeNano} NM
+                    </span>
+                    <span className="text-slate-600">/</span>
+                    <span className={combatCurrencies.microCircuits >= totalUpgradeMicro ? 'text-cyan-300' : 'text-rose-400 font-bold'}>
+                      -{totalUpgradeMicro} MC
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-slate-500">Nenhum elegível</span>
+                )}
               </span>
             </button>
 
             <button
               onClick={handleBatchRepair}
-              disabled={damagedFiltered.length === 0 || combatResources < totalRepairCost}
+              disabled={!canBatchRepair}
               className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex flex-col items-center justify-center transition-all cursor-pointer ${
                 damagedFiltered.length === 0
                   ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 opacity-80 cursor-default'
-                  : combatResources >= totalRepairCost
+                  : canBatchRepair
                   ? 'bg-emerald-950/90 border border-emerald-500/70 hover:bg-emerald-900 text-emerald-200 hover:border-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)] animate-pulse'
                   : 'bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed opacity-60'
               }`}
               title={
                 damagedFiltered.length === 0
                   ? 'Toda a frota deste filtro está com o casco 100% íntegro'
-                  : `Reparar ${damagedFiltered.length} naves por ${totalRepairCost} NM`
+                  : `Reparar ${damagedFiltered.length} naves por ${totalRepairNano} NM e ${totalRepairMicro} MC`
               }
             >
               <div className="flex items-center gap-1">
@@ -390,8 +382,20 @@ export const HexControlDock: React.FC = () => {
                     : `Reparar Todas (${damagedFiltered.length})`}
                 </span>
               </div>
-              <span className="text-[9px] text-amber-300 font-normal">
-                {damagedFiltered.length > 0 ? `-${totalRepairCost} NM` : '0 avarias'}
+              <span className="text-[9px] font-normal flex items-center gap-1">
+                {damagedFiltered.length > 0 ? (
+                  <>
+                    <span className={combatCurrencies.nanoMatter >= totalRepairNano ? 'text-amber-300' : 'text-rose-400 font-bold'}>
+                      -{totalRepairNano} NM
+                    </span>
+                    <span className="text-slate-600">/</span>
+                    <span className={combatCurrencies.microCircuits >= totalRepairMicro ? 'text-cyan-300' : 'text-rose-400 font-bold'}>
+                      -{totalRepairMicro} MC
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-slate-500">0 avarias</span>
+                )}
               </span>
             </button>
           </div>
@@ -427,12 +431,22 @@ export const HexControlDock: React.FC = () => {
               <div className="mt-2 flex flex-col gap-1.5">
                 {(() => {
                   const modDef = defenseModuleDefs[currentModule.type] || DEFAULT_MODULE_DEFS[currentModule.type];
-                  const upgradeCost = Math.round(modDef.baseCost * 0.75 * currentModule.level);
+                  const upCost = getUpgradeCost(currentModule);
+                  const repCost = getRepairCost(currentModule);
                   const curHp = currentModule.currentHp ?? currentModule.maxHp;
                   const maxHp = currentModule.maxHp;
                   const hpRatio = Math.max(0, Math.min(1, curHp / maxHp));
                   const isDamaged = curHp < maxHp;
-                  const repairCost = Math.max(10, Math.round(modDef.baseCost * 0.25));
+
+                  const canUpgrade =
+                    currentModule.level < 5 &&
+                    combatCurrencies.nanoMatter >= upCost.nanoMatter &&
+                    combatCurrencies.microCircuits >= upCost.microCircuits;
+
+                  const canRepair =
+                    isDamaged &&
+                    combatCurrencies.nanoMatter >= repCost.nanoMatter &&
+                    combatCurrencies.microCircuits >= repCost.microCircuits;
 
                   return (
                     <>
@@ -511,15 +525,26 @@ export const HexControlDock: React.FC = () => {
                               const ok = repairPlacedModule(selKey!);
                               if (ok) sound.playUpgrade();
                             }}
-                            disabled={combatResources < repairCost}
-                            className={`col-span-2 py-1 px-2 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${
-                              combatResources >= repairCost
+                            disabled={!canRepair}
+                            className={`col-span-2 py-1.5 px-2 rounded-lg text-xs font-mono font-semibold flex flex-col items-center justify-center transition-colors cursor-pointer ${
+                              canRepair
                                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
                                 : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60'
                             }`}
                           >
-                            <Shield className="w-3 h-3 text-emerald-300" />
-                            <span>Reparar Casco ({repairCost} NM)</span>
+                            <div className="flex items-center gap-1">
+                              <Shield className="w-3 h-3 text-emerald-300" />
+                              <span>Reparar Casco</span>
+                            </div>
+                            <span className="text-[10px] font-normal flex items-center gap-1 mt-0.5">
+                              <span className={combatCurrencies.nanoMatter >= repCost.nanoMatter ? 'text-amber-200' : 'text-rose-400 font-bold'}>
+                                {repCost.nanoMatter} NM
+                              </span>
+                              <span className="text-slate-500">·</span>
+                              <span className={combatCurrencies.microCircuits >= repCost.microCircuits ? 'text-cyan-200' : 'text-rose-400 font-bold'}>
+                                {repCost.microCircuits} MC
+                              </span>
+                            </span>
                           </button>
                         )}
 
@@ -529,18 +554,29 @@ export const HexControlDock: React.FC = () => {
                               const ok = upgradePlacedModule(selKey!);
                               if (ok) sound.playUpgrade();
                             }}
-                            disabled={combatResources < upgradeCost}
-                            className={`py-1 px-2 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${
-                              combatResources >= upgradeCost
+                            disabled={!canUpgrade}
+                            className={`py-1.5 px-2 rounded-lg text-xs font-mono font-semibold flex flex-col items-center justify-center transition-colors cursor-pointer ${
+                              canUpgrade
                                 ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-xs'
                                 : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60'
                             }`}
                           >
-                            <TrendingUp className="w-3 h-3" />
-                            <span>Evoluir ({upgradeCost} NM)</span>
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              <span>Evoluir (NV.{currentModule.level + 1})</span>
+                            </div>
+                            <span className="text-[10px] font-normal flex items-center gap-1 mt-0.5">
+                              <span className={combatCurrencies.nanoMatter >= upCost.nanoMatter ? 'text-amber-200' : 'text-rose-400 font-bold'}>
+                                {upCost.nanoMatter} NM
+                              </span>
+                              <span className="text-slate-500">·</span>
+                              <span className={combatCurrencies.microCircuits >= upCost.microCircuits ? 'text-cyan-200' : 'text-rose-400 font-bold'}>
+                                {upCost.microCircuits} MC
+                              </span>
+                            </span>
                           </button>
                         ) : (
-                          <div className="py-1 px-2 rounded-lg text-xs font-mono font-semibold bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-1">
+                          <div className="py-1.5 px-2 rounded-lg text-xs font-mono font-semibold bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Nível Máx</span>
                           </div>
@@ -551,7 +587,7 @@ export const HexControlDock: React.FC = () => {
                             recyclePlacedModule(selKey!);
                             sound.playClick();
                           }}
-                          className="py-1 px-2 rounded-lg text-xs font-mono font-semibold bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="py-1.5 px-2 rounded-lg text-xs font-mono font-semibold bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           title="Desmontar embarcação e reembolsar recursos"
                         >
                           <Trash2 className="w-3 h-3" />

@@ -481,3 +481,58 @@ export function getCircuitVisualConnections(nodes: CircuitNode[]): CircuitConnec
 
   return connections;
 }
+
+export interface CircuitBonusStats {
+  towerDamageMult: number;
+  fireRateMult: number;
+  critChanceAdd: number;
+  shieldCapBonus: number;
+  towerShotsBonus: number;
+  autoRepairRate: number;
+  storageBonus: number;
+}
+
+export function getCircuitBonusStats(nodes: CircuitNode[]): CircuitBonusStats {
+  const stats: CircuitBonusStats = {
+    towerDamageMult: 0,
+    fireRateMult: 0,
+    critChanceAdd: 0,
+    shieldCapBonus: 0,
+    towerShotsBonus: 0,
+    autoRepairRate: 0,
+    storageBonus: 0,
+  };
+
+  if (!Array.isArray(nodes)) return stats;
+
+  nodes.forEach((n) => {
+    if (!n.unlocked || !n.effect) return;
+    switch (n.effect.stat) {
+      case 'towerDamage':
+        stats.towerDamageMult += n.effect.value;
+        break;
+      case 'fireRate':
+        stats.fireRateMult += n.effect.value;
+        break;
+      case 'critChance':
+        stats.critChanceAdd += n.effect.value;
+        break;
+      case 'shieldCap':
+        stats.shieldCapBonus += n.effect.value;
+        break;
+      case 'towerShots':
+        stats.towerShotsBonus += n.effect.value;
+        break;
+      case 'autoRepairRate':
+        stats.autoRepairRate += n.effect.value;
+        break;
+      case 'storageBonus':
+        stats.storageBonus += n.effect.value;
+        break;
+      default:
+        break;
+    }
+  });
+
+  return stats;
+}

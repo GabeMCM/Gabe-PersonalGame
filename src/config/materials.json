@@ -2254,5 +2254,21 @@
     "source": "Nanofábrica de Endgame [MK-3001]",
     "description": "Fábrica autorreplicante limitada que sintetiza peças básicas automaticamente.",
     "refineYield": { "tech": 10, "dimMat": 6 }
+  },
+  {
+    "id": "mat.dense_plasma",
+    "code": "PD-7013",
+    "name": "Célula de Plasma Denso",
+    "family": "gas",
+    "rarity": "rare",
+    "physicalState": "gas",
+    "unit": "L",
+    "unitWeight": 0.5,
+    "icon": "Zap",
+    "color": "#c084fc",
+    "stage": "refined",
+    "source": "Forno Térmico & Célula de Fusão [MK-2001]",
+    "description": "Gás hélio e hidrogênio superaquecidos e ionizados sob altíssima pressão para alimentação de armas de plasma.",
+    "refineYield": { "energy": 25, "tech": 2, "dimMat": 1 }
   }
 ]
