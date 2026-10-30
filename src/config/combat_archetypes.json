@@ -1,0 +1,64 @@
+[
+  {
+    "id": "piercing_kinetic",
+    "name": "Balística Perfurante",
+    "icon": "Crosshair",
+    "role": "Controle de Fileiras e Colunas",
+    "description": "Projéteis pesados de alta velocidade que atravessam alvos em linha reta, atingindo inimigos na retaguarda.",
+    "pierceCount": 2,
+    "damageFalloff": 0.35,
+    "color": "#38bdf8",
+    "stats": {
+      "danoBase": "+15%",
+      "penetracao": "Até 3 alvos",
+      "pontoForte": "Enxames em formação"
+    }
+  },
+  {
+    "id": "plasma_corrosion",
+    "name": "Plasma Incandescente (DoT)",
+    "icon": "Flame",
+    "role": "Derretimento de Blindagens & Chefes",
+    "description": "Superaquece a carcaça inimiga causando dano contínuo térmico ao longo de 3 segundos acumulativos.",
+    "dotDuration": 3.0,
+    "dotDamagePercent": 0.22,
+    "maxStacks": 3,
+    "color": "#f97316",
+    "stats": {
+      "danoPorSegundo": "22% / seg",
+      "duracao": "3.0s",
+      "pontoForte": "Inimigos com escudo e Elites"
+    }
+  },
+  {
+    "id": "emp_concussion",
+    "name": "Pulso Concussivo EMP",
+    "icon": "Zap",
+    "role": "Atordoamento & Desaceleração de Hordas",
+    "description": "Libera ondas de interferência eletromagnética a cada disparo que retardam a movimentação dos alvos em área.",
+    "slowPercent": 0.45,
+    "slowDuration": 2.0,
+    "aoeRadius": 75,
+    "color": "#a855f7",
+    "stats": {
+      "reducaoVelocidade": "-45%",
+      "alcanceOnda": "75px raio",
+      "pontoForte": "Inimigos velocistas e kamikazes"
+    }
+  },
+  {
+    "id": "shield_drain",
+    "name": "Ressonância & Contra-Dreno",
+    "icon": "Shield",
+    "role": "Sustentação & Conversão Cinética",
+    "description": "Absorve os impactos sofridos pelo escudo da torre, convertendo a energia do golpe em cadência de tiro adicional.",
+    "absorptionRatio": 0.20,
+    "buffDuration": 2.5,
+    "color": "#10b981",
+    "stats": {
+      "conversaoImpacto": "20% em cadência",
+      "duracaoBuff": "2.5s",
+      "pontoForte": "Combates prolongados e hordas densas"
+    }
+  }
+]

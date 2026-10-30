@@ -1,0 +1,42 @@
+{
+  "idle": {
+    "baseEnergyGain": 0.35,
+    "overclockMultiplier": 1.5,
+    "emergencyRepairCostMatter": 25,
+    "collectorBaseRates": {
+      "debris": 0.25,
+      "minerals": 0.20,
+      "gases": 0.30
+    },
+    "collectorCapacities": {
+      "debris": 600,
+      "minerals": 800,
+      "gases": 1000
+    },
+    "storageBase": {
+      "solidKg": 500,
+      "gasL": 1000
+    },
+    "rateGrowthFactorPerLevel": 1.035
+  },
+  "expedition": {
+    "portalBaseCost": 25,
+    "warpDiscountCost": 18,
+    "enemyHpScalingFactor": 1.10,
+    "enemyDamageScalingFactor": 1.06,
+    "dropRateMultiplierPerWave": 1.05,
+    "lootTable": {
+      "ingot_iron": { "min": 1, "max": 3, "chance": 0.50 },
+      "metal_gold": { "min": 1, "max": 2, "chance": 0.35 },
+      "mineral_graphite": { "min": 1, "max": 2, "chance": 0.40 },
+      "canister_oxygen": { "min": 2, "max": 4, "chance": 0.45 },
+      "canister_hydrogen": { "min": 2, "max": 4, "chance": 0.40 },
+      "comp_organic": { "min": 1, "max": 1, "chance": 0.15 },
+      "comp_unknown": { "min": 1, "max": 1, "chance": 0.06 }
+    }
+  },
+  "scaling": {
+    "bonusPerLevel": 0.035,
+    "costMultiplierPerLevel": 1.15
+  }
+}

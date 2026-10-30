@@ -1,0 +1,32 @@
+[
+  {
+    "id": "univ_matter",
+    "name": "Universo 01: Matéria Condensada",
+    "subtitle": "Física Newtoniana & Balística de Impacto",
+    "color": "#38bdf8",
+    "accentBorder": "border-sky-500",
+    "unlocked": true,
+    "unlockRequirement": "Inicial",
+    "description": "Domínio da mecânica clássica e balística. Focado em projéteis cinéticos pesados, blindagens de durasteel e dutos de alta pressão."
+  },
+  {
+    "id": "univ_quantum",
+    "name": "Universo 02: Ressonância Quântica",
+    "subtitle": "Probabilidade, Feixes Térmicos & Fusão",
+    "color": "#f59e0b",
+    "accentBorder": "border-amber-500",
+    "unlocked": false,
+    "unlockRequirement": "Forjar o Ressonador Quântico no Construtor e sobreviver à Onda 10",
+    "description": "Física quântica de alta energia. Desbloqueia queima contínua de plasma, microprocessadores ópticos e sobrecarga sem perda de reator."
+  },
+  {
+    "id": "univ_void",
+    "name": "Universo 03: Vazio Primordial",
+    "subtitle": "Matéria Escura & Dilatação Gravitacional",
+    "color": "#d946ef",
+    "accentBorder": "border-fuchsia-500",
+    "unlocked": false,
+    "unlockRequirement": "Conquistar 1 fragmento de Matéria Escura Cristalina e vencer a Onda 25",
+    "description": "Espaço-tempo curvado. Permite desaceleração gravitacional de fendas, contra-dreno de escudo cósmico e extração instantânea com zero perda."
+  }
+]

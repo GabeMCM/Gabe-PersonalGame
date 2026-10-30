@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   TESTE VISUAL: 0 OU MÍNIMO POSSÍVEL DE BORDER (GLOBAL OVERRIDE)
+   Elimina bordas em todas as telas, componentes, cartões e elementos.
+   Utiliza elevação tonal e sombras sutis para preservar a legibilidade e contraste.
+   ========================================================================== */
+
+*,
+::before,
+::after {
+  border-width: 0px !important;
+  border-style: none !important;
+  border-color: transparent !important;
+}
+
+/* Leve elevação para cartões e contêineres arredondados para contraste de superfície */
+.rounded-2xl,
+.rounded-xl,
+.rounded-lg,
+.rounded-md {
+  box-shadow: 0 3px 10px -2px rgba(0, 0, 0, 0.5), 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Foco acessível sem interferir nas bordas */
+:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.5) !important;
+  outline-offset: 2px !important;
+}
+
+/* Micro-feedback tátil em botões */
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* Barra de rolagem discreta e sem borda */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.6);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.8);
+}

@@ -1,0 +1,6 @@
+{
+  "summary":  "Especificação e implementação dos novos sistemas de combate do Modo Alto: durabilidade (HP) e destruição de embarcações, arquétipos de combate especializados (tanque, suporte curador, sobrecarga explosiva), malha de hexágonos ampliada com tamanho reduzido em 50% (378 células), visualização de área de efeito (AoE hexagonal), sincronização total com o catálogo de materiais físicos PD-xxxx e reformulação do ritmo e pool de cartas roguelike.",
+  "updatedAt":  "2026-10-26T13:49:44.273628460Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

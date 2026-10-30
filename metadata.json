@@ -1,0 +1,6 @@
+{
+  "name": "Torre Dimensional - Tower Defense Idle Roguelike",
+  "description": "Jogo espacial híbrido combinando a automação e progressão permanente de um Idle Game à profundidade tática e risco de um Tower Defense Roguelike em 3D Low-Poly.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

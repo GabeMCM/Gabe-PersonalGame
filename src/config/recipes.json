@@ -1,0 +1,633 @@
+[
+  {
+    "id": "recipe_sep_structural",
+    "code": "RC-1001",
+    "name": "Triagem de Sucata Estrutural",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 0,
+    "timeSeconds": 8,
+    "energyCost": 1,
+    "inputItems": [
+      { "itemId": "scrap.structural", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.recovered_iron", "quantity": 2 },
+      { "itemId": "part.fastener", "quantity": 1 },
+      { "itemId": "part.rough_plate", "quantity": 1 }
+    ],
+    "description": "Cisalha carcaças recuperadas separando metal recuperado [PD-2001] e fixadores [PD-3001]."
+  },
+  {
+    "id": "recipe_sep_electrical",
+    "code": "RC-1002",
+    "name": "Triagem de Sucata Elétrica",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 0,
+    "timeSeconds": 10,
+    "energyCost": 1,
+    "inputItems": [
+      { "itemId": "scrap.electrical", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.recovered_copper", "quantity": 1 },
+      { "itemId": "part.short_wire", "quantity": 1 },
+      { "itemId": "part.connector", "quantity": 1 }
+    ],
+    "description": "Separa bobinas e fiações extraindo cobre [PD-2002], fios curtos [PD-3003] e conectores [PD-3012]."
+  },
+  {
+    "id": "recipe_sep_mechanical",
+    "code": "RC-1003",
+    "name": "Triagem de Sucata Mecânica",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 0,
+    "timeSeconds": 12,
+    "energyCost": 2,
+    "inputItems": [
+      { "itemId": "scrap.mechanical", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "part.gear_small", "quantity": 1 },
+      { "itemId": "part.short_shaft", "quantity": 1 },
+      { "itemId": "part.bearing", "quantity": 1 }
+    ],
+    "description": "Desmonta caixas de redução recuperando engrenagens [PD-3008], eixos [PD-3009] e rolamentos [PD-3010]."
+  },
+  {
+    "id": "recipe_sep_electronic",
+    "code": "RC-1004",
+    "name": "Triagem de Sucata Eletrônica",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 0,
+    "timeSeconds": 15,
+    "energyCost": 2,
+    "inputItems": [
+      { "itemId": "scrap.electronic", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "part.circuit_scrap", "quantity": 1 },
+      { "itemId": "part.connector", "quantity": 1 }
+    ],
+    "description": "Peneira módulos queimados resgatando placas de circuito [PD-3011] e conectores [PD-3012]."
+  },
+  {
+    "id": "recipe_sep_chemical",
+    "code": "RC-1005",
+    "name": "Triagem de Sucata Química",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 0,
+    "timeSeconds": 10,
+    "energyCost": 1,
+    "inputItems": [
+      { "itemId": "scrap.chemical", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.recovered_polymer", "quantity": 1 },
+      { "itemId": "mat.used_oil", "quantity": 1 }
+    ],
+    "description": "Drena mangueiras e reservatórios recuperando polímeros [PD-2003] e óleo industrial [PD-2006]."
+  },
+  {
+    "id": "recipe_sep_thermal",
+    "code": "RC-1006",
+    "name": "Triagem de Sucata Térmica",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 0,
+    "timeSeconds": 12,
+    "energyCost": 2,
+    "inputItems": [
+      { "itemId": "scrap.thermal", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.recovered_ceramic", "quantity": 1 },
+      { "itemId": "part.heatsink_fragment", "quantity": 1 }
+    ],
+    "description": "Fragmenta isolantes térmicos recolhendo cerâmica [PD-2004] e dissipadores [PD-3013]."
+  },
+  {
+    "id": "recipe_sep_military",
+    "code": "RC-1007",
+    "name": "Triagem de Sucata Militar",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 1,
+    "timeSeconds": 18,
+    "energyCost": 3,
+    "inputItems": [
+      { "itemId": "scrap.military", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.recovered_iron", "quantity": 2 },
+      { "itemId": "part.armored_plate_fragment", "quantity": 1 },
+      { "itemId": "part.targeting_sensor_damaged", "quantity": 1 }
+    ],
+    "description": "Desarma destroços blindados resgatando chapas reforçadas [PD-3014] e sensores de mira [PD-3016]."
+  },
+  {
+    "id": "recipe_sep_unknown",
+    "code": "RC-1008",
+    "name": "Triagem de Sucata Desconhecida",
+    "station": "separator",
+    "machineCode": "MK-1002",
+    "tier": 2,
+    "timeSeconds": 20,
+    "energyCost": 4,
+    "inputItems": [
+      { "itemId": "scrap.unknown", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.recovered_iron", "quantity": 2 },
+      { "itemId": "mat.recovered_polymer", "quantity": 1 },
+      { "itemId": "part.circuit_scrap", "quantity": 1 },
+      { "itemId": "mat.resonance_crystal", "quantity": 1 }
+    ],
+    "description": "Desintegração controlada de artefatos alienígenas com recuperação de dados e cristais [PD-7007]."
+  },
+  {
+    "id": "craft_tool_grinding_stone",
+    "code": "FR-1001",
+    "name": "Pedra de Moagem",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 0,
+    "timeSeconds": 10,
+    "energyCost": 2,
+    "inputItems": [
+      { "itemId": "mat.recovered_iron", "quantity": 2 },
+      { "itemId": "raw.basalt", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Ferramenta abrasiva de basalto [FR-1001] para desbaste manual e moagem primária de minerais."
+  },
+  {
+    "id": "craft_tool_scrap_cutter",
+    "code": "FR-1002",
+    "name": "Cortador de Sucata",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 0,
+    "timeSeconds": 12,
+    "energyCost": 2,
+    "inputItems": [
+      { "itemId": "part.rough_plate", "quantity": 2 }
+    ],
+    "outputItems": [],
+    "description": "Ferramenta de alavanca com lâmina temperada [FR-1002] para cisalhamento manual de chapas."
+  },
+  {
+    "id": "craft_tool_fabric_filter",
+    "code": "FR-1003",
+    "name": "Filtro de Pano",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 0,
+    "timeSeconds": 8,
+    "energyCost": 1,
+    "inputItems": [
+      { "itemId": "mat.recovered_polymer", "quantity": 1 },
+      { "itemId": "part.short_wire", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Filtro poroso de tecido sintético [FR-1003] para retenção de sedimentos e destilação de água."
+  },
+  {
+    "id": "craft_tool_precision_cutter",
+    "code": "FR-1010",
+    "name": "Ferramenta de Torneamento de Precisão",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 20,
+    "energyCost": 4,
+    "inputItems": [
+      { "itemId": "part.precision_toolhead", "quantity": 1 },
+      { "itemId": "part.fastener", "quantity": 2 }
+    ],
+    "outputItems": [],
+    "description": "Bolsa de pontas de corte usinadas [FR-1010] para operação no Torno & Fresadora [MK-2005]."
+  },
+  {
+    "id": "craft_tool_laser_calibrator",
+    "code": "FR-1020",
+    "name": "Calibrador Óptico de Precisão",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 2,
+    "timeSeconds": 25,
+    "energyCost": 5,
+    "inputItems": [
+      { "itemId": "raw.quartz", "quantity": 4 },
+      { "itemId": "part.connector", "quantity": 2 },
+      { "itemId": "raw.platinum_group_ore", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Instrumento óptico micrométrico [FR-1020] para calibragem de prismas e miras da torre."
+  },
+  {
+    "id": "craft_tool_maintenance_drone",
+    "code": "FR-1030",
+    "name": "Drone Utilitário de Manutenção",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 2,
+    "timeSeconds": 30,
+    "energyCost": 8,
+    "inputItems": [
+      { "itemId": "mat.recovered_iron", "quantity": 4 },
+      { "itemId": "part.circuit_scrap", "quantity": 2 },
+      { "itemId": "part.motor_basic", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Dispositivo móvel automatizado [FR-1030] que restaura instantaneamente integridade estrutural do casco."
+  },
+  {
+    "id": "craft_tool_sensor_probe",
+    "code": "FR-1040",
+    "name": "Sonda de Telemetria e Escaneamento",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 2,
+    "timeSeconds": 25,
+    "energyCost": 6,
+    "inputItems": [
+      { "itemId": "mat.recovered_polymer", "quantity": 3 },
+      { "itemId": "part.circuit_scrap", "quantity": 2 },
+      { "itemId": "raw.silica_sand", "quantity": 2 }
+    ],
+    "outputItems": [],
+    "description": "Sonda de varredura sub-espacial [FR-1040] que gera Dados de Combate para pesquisas bélicas."
+  },
+  {
+    "id": "craft_tool_emp_deployer",
+    "code": "FR-1050",
+    "name": "Dispositivo Tático de Pulso EMP",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 2,
+    "timeSeconds": 25,
+    "energyCost": 6,
+    "inputItems": [
+      { "itemId": "part.capacitor_bank", "quantity": 1 },
+      { "itemId": "part.short_wire", "quantity": 4 },
+      { "itemId": "mat.recovered_copper", "quantity": 2 }
+    ],
+    "outputItems": [],
+    "description": "Dispositivo eletromagnético portátil [FR-1050] que descarrega estática e injeta energia no reator."
+  },
+  {
+    "id": "craft_tool_shield_booster",
+    "code": "FR-1060",
+    "name": "Sobrealimentador Portátil de Escudos",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 2,
+    "timeSeconds": 25,
+    "energyCost": 6,
+    "inputItems": [
+      { "itemId": "part.electric_coil", "quantity": 2 },
+      { "itemId": "mat.recovered_ceramic", "quantity": 2 },
+      { "itemId": "mat.iron_ingot", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Capacitor de sobrecarga [FR-1060] que recarrega instantaneamente a matriz de escudos da estação."
+  },
+  {
+    "id": "craft_ore_collector",
+    "code": "MK-1004",
+    "name": "Coletor de Minério",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 0,
+    "timeSeconds": 45,
+    "energyCost": 5,
+    "unlockFeature": "unlock_minerals_collector",
+    "inputItems": [
+      { "itemId": "part.basic_frame", "quantity": 1 },
+      { "itemId": "part.collection_head", "quantity": 1 },
+      { "itemId": "part.simple_drive", "quantity": 1 },
+      { "itemId": "part.recovered_controller", "quantity": 1 },
+      { "itemId": "part.simple_bracket", "quantity": 2 }
+    ],
+    "outputItems": [],
+    "description": "Monta a garra e braços magnéticos do Coletor de Minério [MK-1004] para extração contínua no cinturão."
+  },
+  {
+    "id": "craft_cargo_silos",
+    "code": "MK-1005",
+    "name": "Hangar de Estoque Industrial",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 0,
+    "timeSeconds": 45,
+    "energyCost": 5,
+    "unlockFeature": "unlock_inventory_sector",
+    "inputItems": [
+      { "itemId": "part.basic_frame", "quantity": 1 },
+      { "itemId": "part.storage_bay", "quantity": 2 },
+      { "itemId": "part.basic_conveyor", "quantity": 1 },
+      { "itemId": "part.recovered_controller", "quantity": 1 },
+      { "itemId": "part.fastener", "quantity": 4 }
+    ],
+    "outputItems": [],
+    "description": "Ergue os compartimentos de carga herméticos [MK-1005] para 100 pilhas, DESBLOQUEANDO AS EXPEDIÇÕES."
+  },
+  {
+    "id": "craft_furnace_sector",
+    "code": "MK-2001",
+    "name": "Forno de Recuperação Térmica",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 90,
+    "energyCost": 8,
+    "unlockFeature": "unlock_furnace_sector",
+    "inputItems": [
+      { "itemId": "part.basic_frame", "quantity": 1 },
+      { "itemId": "part.thermal_chamber", "quantity": 1 },
+      { "itemId": "part.heating_coil", "quantity": 1 },
+      { "itemId": "part.basic_temperature_control", "quantity": 1 },
+      { "itemId": "part.ash_reservoir", "quantity": 1 },
+      { "itemId": "mat.refractory_lining", "quantity": 2 }
+    ],
+    "outputItems": [],
+    "description": "Constrói o Forno de Recuperação Térmica [MK-2001] com cadinho refratário a 2800°C para inaugurar a metalurgia."
+  },
+  {
+    "id": "craft_wire_drawer",
+    "code": "MK-2002",
+    "name": "Trefiladora Industrial",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 75,
+    "energyCost": 6,
+    "inputItems": [
+      { "itemId": "mat.iron_ingot", "quantity": 6 },
+      { "itemId": "part.gear_small", "quantity": 2 },
+      { "itemId": "part.mechanical_assembly", "quantity": 1 },
+      { "itemId": "part.simple_control", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Instala a Trefiladora [MK-2002] para estiramento mecânico de lingotes em fios condutores padronizados."
+  },
+  {
+    "id": "craft_rolling_mill",
+    "code": "MK-2003",
+    "name": "Laminador de Chapas e Perfis",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 100,
+    "energyCost": 8,
+    "inputItems": [
+      { "itemId": "mat.iron_ingot", "quantity": 8 },
+      { "itemId": "part.gear_small", "quantity": 4 },
+      { "itemId": "part.short_shaft", "quantity": 2 },
+      { "itemId": "part.simple_control", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Instala os cilindros de laminação [MK-2003] para conformação contínua de barras, chapas e perfis estruturais."
+  },
+  {
+    "id": "craft_hydraulic_press",
+    "code": "MK-2004",
+    "name": "Prensa Hidráulica de Conformação",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 120,
+    "energyCost": 10,
+    "inputItems": [
+      { "itemId": "mat.iron_ingot", "quantity": 8 },
+      { "itemId": "part.hydraulic_cylinder", "quantity": 2 },
+      { "itemId": "part.hydraulic_pump", "quantity": 1 },
+      { "itemId": "part.recovered_controller", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Prensa de alta tonelagem [MK-2004] para estampagem de suportes reforçados, vigas e blindagens."
+  },
+  {
+    "id": "craft_lathe_mill",
+    "code": "MK-2005",
+    "name": "Torno & Fresadora de Precisão",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 110,
+    "energyCost": 8,
+    "inputItems": [
+      { "itemId": "mat.iron_ingot", "quantity": 6 },
+      { "itemId": "part.short_shaft", "quantity": 2 },
+      { "itemId": "part.precision_toolhead", "quantity": 1 },
+      { "itemId": "part.recovered_controller", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Centro de usinagem [MK-2005] para corte micrométrico de engrenagens, rolamentos, pistões e eixos."
+  },
+  {
+    "id": "craft_distiller",
+    "code": "MK-2201",
+    "name": "Destilador Térmico",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 90,
+    "energyCost": 6,
+    "inputItems": [
+      { "itemId": "mat.iron_sheet", "quantity": 4 },
+      { "itemId": "mat.rough_glass", "quantity": 2 },
+      { "itemId": "part.heating_coil", "quantity": 1 },
+      { "itemId": "part.basic_controller", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Coluna de destilação fracionada [MK-2201] para purificação de água cometária e regeneração de óleos."
+  },
+  {
+    "id": "craft_gas_collector",
+    "code": "MK-2202",
+    "name": "Coletor de Gases Estelares",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 100,
+    "energyCost": 8,
+    "unlockFeature": "unlock_gas_collector",
+    "inputItems": [
+      { "itemId": "mat.iron_sheet", "quantity": 4 },
+      { "itemId": "part.hydraulic_pump", "quantity": 2 },
+      { "itemId": "part.basic_controller", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Sifão criogênico pressurizado [MK-2202] para captação contínua de hidrogênio e gases nebulosos."
+  },
+  {
+    "id": "craft_chemical_refinery",
+    "code": "MK-2203",
+    "name": "Refinaria Química & Reator",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 150,
+    "energyCost": 12,
+    "unlockFeature": "unlock_refinery_sector",
+    "inputItems": [
+      { "itemId": "mat.iron_sheet", "quantity": 8 },
+      { "itemId": "part.hydraulic_pump", "quantity": 2 },
+      { "itemId": "part.basic_controller", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Reator químico vedado [MK-2203] para polímeros técnicos, lubrificantes industriais e resinas estruturais."
+  },
+  {
+    "id": "craft_generator_basic",
+    "code": "MK-2103",
+    "name": "Gerador Elétrico Básico",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 100,
+    "energyCost": 10,
+    "inputItems": [
+      { "itemId": "part.magnetic_core", "quantity": 1 },
+      { "itemId": "part.electric_coil", "quantity": 3 },
+      { "itemId": "part.basic_controller", "quantity": 1 },
+      { "itemId": "part.reinforced_beam", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Alternador magnético [MK-2103] gerador de +10 unidades de Energia Operacional por segundo."
+  },
+  {
+    "id": "craft_battery_bank",
+    "code": "MK-2104",
+    "name": "Banco de Baterias Industriais",
+    "station": "assembler",
+    "machineCode": "MK-1003",
+    "tier": 1,
+    "timeSeconds": 75,
+    "energyCost": 8,
+    "inputItems": [
+      { "itemId": "part.capacitor_bank", "quantity": 6 },
+      { "itemId": "mat.copper_wire", "quantity": 2 },
+      { "itemId": "part.basic_controller", "quantity": 1 },
+      { "itemId": "mat.iron_sheet", "quantity": 1 }
+    ],
+    "outputItems": [],
+    "description": "Bateria de acumuladores [MK-2104] fornecendo buffer de +100 unidades de armazenamento de energia."
+  },
+  {
+    "id": "recipe_smelt_iron",
+    "code": "RC-2001",
+    "name": "Refino de Ferro Primário",
+    "station": "furnace",
+    "machineCode": "MK-2001",
+    "tier": 1,
+    "timeSeconds": 30,
+    "energyCost": 4,
+    "inputItems": [
+      { "itemId": "raw.ferrous_regolith", "quantity": 3 },
+      { "itemId": "mat.thermal_residue", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.iron_ingot", "quantity": 2 },
+      { "itemId": "mat.slag", "quantity": 1 }
+    ],
+    "description": "Redução carbotérmica de regolito ferrífero [PD-1001] gerando lingotes de ferro [PD-3101]."
+  },
+  {
+    "id": "recipe_smelt_copper",
+    "code": "RC-2002",
+    "name": "Refino de Cobre Primário",
+    "station": "furnace",
+    "machineCode": "MK-2001",
+    "tier": 1,
+    "timeSeconds": 35,
+    "energyCost": 4,
+    "inputItems": [
+      { "itemId": "raw.copper_ore", "quantity": 3 },
+      { "itemId": "mat.thermal_residue", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.copper_ingot", "quantity": 2 },
+      { "itemId": "mat.slag", "quantity": 1 }
+    ],
+    "description": "Fusão e refino pirometalúrgico de minério de cobre [PD-1002] gerando lingotes de cobre [PD-3102]."
+  },
+  {
+    "id": "recipe_recover_iron",
+    "code": "RC-2003",
+    "name": "Recuperação Térmica de Ferro",
+    "station": "furnace",
+    "machineCode": "MK-2001",
+    "tier": 1,
+    "timeSeconds": 25,
+    "energyCost": 3,
+    "inputItems": [
+      { "itemId": "mat.recovered_iron", "quantity": 3 },
+      { "itemId": "mat.thermal_residue", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.iron_ingot", "quantity": 2 }
+    ],
+    "description": "Refundição de fragmentos ferrosos recuperados da sucata em lingotes padronizados [PD-3101]."
+  },
+  {
+    "id": "recipe_recover_copper",
+    "code": "RC-2004",
+    "name": "Recuperação Térmica de Cobre",
+    "station": "furnace",
+    "machineCode": "MK-2001",
+    "tier": 1,
+    "timeSeconds": 25,
+    "energyCost": 3,
+    "inputItems": [
+      { "itemId": "mat.recovered_copper", "quantity": 3 },
+      { "itemId": "mat.thermal_residue", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.copper_ingot", "quantity": 2 }
+    ],
+    "description": "Fusão de fios e filamentos soltos de cobre em lingotes de cobre refinado [PD-3102]."
+  },
+  {
+    "id": "recipe_technical_ceramic",
+    "code": "RC-2005",
+    "name": "Sinterização de Cerâmica Técnica",
+    "station": "furnace",
+    "machineCode": "MK-2001",
+    "tier": 1,
+    "timeSeconds": 40,
+    "energyCost": 4,
+    "inputItems": [
+      { "itemId": "raw.basalt", "quantity": 3 },
+      { "itemId": "raw.borate", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.technical_ceramic", "quantity": 2 }
+    ],
+    "description": "Sinterização a alta temperatura de basalto e borato gerando cerâmica técnica [PD-3107]."
+  },
+  {
+    "id": "recipe_rough_glass",
+    "code": "RC-2006",
+    "name": "Fusão de Vidro Rudimentar",
+    "station": "furnace",
+    "machineCode": "MK-2001",
+    "tier": 1,
+    "timeSeconds": 35,
+    "energyCost": 3,
+    "inputItems": [
+      { "itemId": "raw.silica_sand", "quantity": 3 },
+      { "itemId": "mat.thermal_residue", "quantity": 1 }
+    ],
+    "outputItems": [
+      { "itemId": "mat.rough_glass", "quantity": 2 }
+    ],
+    "description": "Fusão térmica de areia silicatada [PD-1010] com resíduo térmico em placas de vidro [PD-3106]."
+  }
+]
